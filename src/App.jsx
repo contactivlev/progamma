@@ -86,7 +86,7 @@ export default function App() {
       {/* Header & Controls */}
       <div className="w-full max-w-4xl mb-10 space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 to-orange-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent">
             Scale Visualizer
           </h1>
           <p className="text-slate-400">Select a root note to see the scale</p>
@@ -99,7 +99,7 @@ export default function App() {
           <div className="flex items-center gap-3 min-w-[200px]">
             <div className={`p-3 rounded-xl ${
               selectedRoot !== null 
-                ? (mode === 'major' ? 'bg-green-500/20 text-green-300' : 'bg-orange-500/20 text-orange-300')
+                ? (mode === 'major' ? 'bg-blue-500/20 text-blue-300' : 'bg-orange-500/20 text-orange-300')
                 : 'bg-slate-700/50 text-slate-500'
             }`}>
               <Music size={24} />
@@ -116,7 +116,7 @@ export default function App() {
               onClick={() => setMode('major')}
               className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
                 mode === 'major' 
-                  ? 'bg-green-600 text-white shadow-lg' 
+                  ? 'bg-blue-600 text-white shadow-lg' 
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
@@ -176,10 +176,10 @@ export default function App() {
                       className={`
                         w-14 h-48 border-b-4 border-l border-r border-slate-300 rounded-b-lg active:scale-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-4 group relative z-0
                         ${whiteStatus.isRoot 
-                           ? (mode === 'major' ? 'bg-green-600 border-green-800 shadow-[0_0_20px_rgba(74,222,128,0.6)] z-10' : 'bg-orange-600 border-orange-800 shadow-[0_0_20px_rgba(234,88,12,0.6)] z-10')
+                           ? (mode === 'major' ? 'bg-blue-600 border-blue-800 shadow-[0_0_20px_rgba(37,99,235,0.6)] z-10' : 'bg-orange-600 border-orange-800 shadow-[0_0_20px_rgba(234,88,12,0.6)] z-10')
                            : ''}
                         ${!whiteStatus.isRoot && whiteStatus.isActive 
-                           ? (mode === 'major' ? 'bg-green-200 border-b-green-300' : 'bg-orange-200 border-b-orange-300') 
+                           ? (mode === 'major' ? 'bg-blue-200 border-b-blue-300' : 'bg-orange-200 border-b-orange-300') 
                            : ''}
                         ${!whiteStatus.isActive && !whiteStatus.isRoot ? 'bg-white hover:bg-gray-100' : ''}
                       `}
@@ -205,9 +205,9 @@ export default function App() {
                         className={`
                           absolute -right-4 top-0 w-8 h-32 border-b-8 border-slate-900 rounded-b-md z-20 active:scale-y-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-3 shadow-xl
                           ${blackStatus.isRoot 
-                            ? (mode === 'major' ? 'bg-green-600 border-green-900 shadow-[0_0_15px_rgba(74,222,128,0.6)]' : 'bg-orange-600 border-orange-900 shadow-[0_0_15px_rgba(234,88,12,0.6)]')
+                            ? (mode === 'major' ? 'bg-blue-600 border-blue-900 shadow-[0_0_15px_rgba(37,99,235,0.6)]' : 'bg-orange-600 border-orange-900 shadow-[0_0_15px_rgba(234,88,12,0.6)]')
                             : blackStatus.isActive 
-                              ? (mode === 'major' ? 'bg-green-400 border-green-900' : 'bg-orange-400 border-orange-900')
+                              ? (mode === 'major' ? 'bg-blue-400 border-blue-900' : 'bg-orange-400 border-orange-900')
                               : 'bg-slate-800 border-black hover:bg-slate-700'
                           }
                         `}
@@ -228,11 +228,11 @@ export default function App() {
       {/* Legend / Instructions */}
       <div className="mt-8 flex gap-6 text-sm text-slate-400">
         <div className="flex items-center gap-2">
-          <div className={`w-4 h-4 rounded-sm border ${mode === 'major' ? 'bg-green-600 border-green-800' : 'bg-orange-600 border-orange-800'}`}></div>
+          <div className={`w-4 h-4 rounded-sm border ${mode === 'major' ? 'bg-blue-600 border-blue-800' : 'bg-orange-600 border-orange-800'}`}></div>
           <span>Root Note</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`w-4 h-4 rounded-sm border ${mode === 'major' ? 'bg-green-200 border-green-300' : 'bg-orange-200 border-orange-300'}`}></div>
+          <div className={`w-4 h-4 rounded-sm border ${mode === 'major' ? 'bg-blue-200 border-blue-300' : 'bg-orange-200 border-orange-300'}`}></div>
           <span>Scale Note</span>
         </div>
       </div>
