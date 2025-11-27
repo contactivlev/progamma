@@ -45,8 +45,8 @@ export default function App() {
   const playTone = useCallback((noteIndex, octave) => {
     if (!audioEnabled || !audioCtx) return;
 
-    const semitonesFromC3 = (octave * 12) + noteIndex;
-    const frequency = 130.81 * Math.pow(2, semitonesFromC3 / 12);
+    const semitonesFromA4 = (octave - 4) * 12 + (noteIndex - 9);
+    const frequency = 440 * Math.pow(2, semitonesFromA4 / 12);
     
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
