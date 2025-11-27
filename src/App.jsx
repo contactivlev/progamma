@@ -25,7 +25,7 @@ const SCALE_VARIATIONS = {
 };
 
 export default function App() {
-  const [selectedRoot, setSelectedRoot] = useState(null); // Index 0-11
+  const [selectedRoot, setSelectedRoot] = useState(null); // { note: index, octave: number }
   const [mode, setMode] = useState('major'); // 'major' or 'minor'
   const [scaleVariation, setScaleVariation] = useState({ major: 0, minor: 0 });
   const [audioEnabled, setAudioEnabled] = useState(true);
@@ -47,19 +47,19 @@ export default function App() {
 
     const semitonesFromA4 = (octave - 4) * 12 + (noteIndex - 9);
     const frequency = 440 * Math.pow(2, semitonesFromA4 / 12);
-    
+
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-    
+
     osc.type = 'sine';
     osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-    
+
     gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-    
+
     osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-    
+
     osc.start();
     osc.stop(audioCtx.currentTime + 0.5);
   }, [audioEnabled, audioCtx]);
@@ -75,11 +75,11 @@ export default function App() {
     let octaveOffset = 0;
 
     scaleIntervals.forEach((interval, index) => {
-      const noteIndex = (selectedRoot + interval) % 12;
+      const noteIndex = (selectedRoot.note + interval) % 12;
       if (noteIndex < lastNoteIndex) {
         octaveOffset++;
       }
-      const octave = 3 + octaveOffset;
+      const octave = selectedRoot.octave + octaveOffset;
       lastNoteIndex = noteIndex;
 
       setTimeout(() => {
@@ -96,19 +96,19 @@ export default function App() {
     initAudio();
     playTone(noteIndex, octave);
 
-    if (selectedRoot === noteIndex) {
+    if (selectedRoot && selectedRoot.note === noteIndex) {
       setSelectedRoot(null);
     } else {
-      setSelectedRoot(noteIndex);
+      setSelectedRoot({ note: noteIndex, octave: octave });
     }
   };
 
   const getScaleStatus = (noteIndex) => {
     if (selectedRoot === null) return { isActive: false, isRoot: false };
 
-    const relativeIndex = (noteIndex - selectedRoot + 12) % 12;
-    const isRoot = noteIndex === selectedRoot;
-    
+    const relativeIndex = (noteIndex - selectedRoot.note + 12) % 12;
+    const isRoot = noteIndex === selectedRoot.note;
+
     const isActive = currentScale.includes(relativeIndex);
 
     return { isActive, isRoot };
@@ -117,7 +117,7 @@ export default function App() {
   const getScaleName = () => {
     if (selectedRoot === null) return "Select a key";
     const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]];
-    return `${NOTES[selectedRoot]} ${variationName}`;
+    return `${NOTES[selectedRoot.note]} ${variationName}`;
   };
 
   const handleModeChange = (newMode) => {
@@ -133,7 +133,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 font-sans select-none">
-      
+
       <div className="w-full max-w-4xl mb-10 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent">
@@ -143,7 +143,7 @@ export default function App() {
         </div>
 
         <div className="bg-slate-800/50 p-6 rounded-2xl backdrop-blur-sm border border-slate-700 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-          
+
           <div className="flex items-center gap-3 min-w-[200px]">
             <button
               onClick={playScale}
@@ -166,8 +166,8 @@ export default function App() {
               <button
                 onClick={() => handleModeChange('major')}
                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  mode === 'major' 
-                    ? 'bg-blue-600 text-white shadow-lg' 
+                  mode === 'major'
+                    ? 'bg-blue-600 text-white shadow-lg'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
@@ -176,8 +176,8 @@ export default function App() {
               <button
                 onClick={() => handleModeChange('minor')}
                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  mode === 'minor' 
-                    ? 'bg-orange-600 text-white shadow-lg' 
+                  mode === 'minor'
+                    ? 'bg-orange-600 text-white shadow-lg'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
@@ -185,7 +185,7 @@ export default function App() {
               </button>
             </div>
 
-            <button 
+            <button
               onClick={handleVariationChange}
               className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg border border-slate-600"
               title="Change Scale Variation"
@@ -195,7 +195,7 @@ export default function App() {
             </button>
           </div>
 
-          <button 
+          <button
             onClick={() => setAudioEnabled(!audioEnabled)}
             className={`p-3 rounded-xl transition-colors ${audioEnabled ? 'bg-slate-700 text-green-400' : 'bg-slate-800 text-red-400'}`}
             title="Toggle Sound"
@@ -207,7 +207,7 @@ export default function App() {
 
       <div className="relative w-full max-w-5xl overflow-x-auto pb-8 custom-scrollbar">
         <div className="flex justify-center min-w-[800px]">
-          
+
           {[0, 1].map((octave) => (
             <div key={`octave-${octave}`} className="flex relative">
               {NOTES.map((note, index) => {
@@ -216,28 +216,28 @@ export default function App() {
 
                 const nextNoteIndex = (index + 1) % 12;
                 const hasBlackKey = NOTES[nextNoteIndex].includes('#');
-                
+
                 const whiteStatus = getScaleStatus(index);
                 const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex) : { isActive: false, isRoot: false };
 
                 return (
                   <div key={`key-${octave}-${index}`} className="relative">
-                    
+
                     <button
                       onClick={() => handleKeyClick(index, octave + 3)}
                       className={`
                         w-14 h-48 border-b-4 border-l border-r border-slate-300 rounded-b-lg active:scale-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-4 group relative z-0
-                        ${whiteStatus.isRoot 
+                        ${whiteStatus.isRoot
                            ? (mode === 'major' ? 'bg-blue-600 border-blue-800 shadow-[0_0_20px_rgba(37,99,235,0.6)] z-10' : 'bg-orange-600 border-orange-800 shadow-[0_0_20px_rgba(234,88,12,0.6)] z-10')
                            : ''}
-                        ${!whiteStatus.isRoot && whiteStatus.isActive 
-                           ? (mode === 'major' ? 'bg-blue-200 border-b-blue-300' : 'bg-orange-200 border-b-orange-300') 
+                        ${!whiteStatus.isRoot && whiteStatus.isActive
+                           ? (mode === 'major' ? 'bg-blue-200 border-b-blue-300' : 'bg-orange-200 border-b-orange-300')
                            : ''}
                         ${!whiteStatus.isActive && !whiteStatus.isRoot ? 'bg-white hover:bg-gray-100' : ''}
                       `}
                     >
                       <span className={`font-bold text-sm ${
-                        whiteStatus.isRoot ? 'text-white' : 
+                        whiteStatus.isRoot ? 'text-white' :
                         whiteStatus.isActive ? 'text-slate-900' : 'text-slate-300 group-hover:text-slate-400'
                       }`}>
                         {note}{octave + 3}
@@ -255,9 +255,9 @@ export default function App() {
                         }}
                         className={`
                           absolute -right-4 top-0 w-8 h-32 border-b-8 border-slate-900 rounded-b-md z-20 active:scale-y-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-3 shadow-xl
-                          ${blackStatus.isRoot 
+                          ${blackStatus.isRoot
                             ? (mode === 'major' ? 'bg-blue-600 border-blue-900 shadow-[0_0_15px_rgba(37,99,235,0.6)]' : 'bg-orange-600 border-orange-900 shadow-[0_0_15px_rgba(234,88,12,0.6)]')
-                            : blackStatus.isActive 
+                            : blackStatus.isActive
                               ? (mode === 'major' ? 'bg-blue-400 border-blue-900' : 'bg-orange-400 border-orange-900')
                               : 'bg-slate-800 border-black hover:bg-slate-700'
                           }
@@ -276,11 +276,11 @@ export default function App() {
         </div>
       </div>
 
-      <ChordsTable 
-        selectedRoot={selectedRoot} 
-        mode={mode} 
-        scale={currentScale} 
-        playTone={playTone} 
+      <ChordsTable
+        selectedRoot={selectedRoot ? selectedRoot.note : null}
+        mode={mode}
+        scale={currentScale}
+        playTone={playTone}
       />
 
       <div className="mt-8 flex gap-6 text-sm text-slate-400">
