@@ -212,7 +212,7 @@ export default function App() {
                 const hasBlackKey = NOTES[nextNoteIndex].includes('#');
                 
                 const whiteStatus = getScaleStatus(index);
-                const blackStatus = hasBlackKey ? getStatusForNote(nextNoteIndex) : { isActive: false, isRoot: false };
+                const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex) : { isActive: false, isRoot: false };
 
                 return (
                   <div key={`key-${octave}-${index}`} className="relative">
