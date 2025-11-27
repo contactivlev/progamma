@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Volume2, VolumeX, Play, RefreshCw } from 'lucide-react';
+import ChordsTable from './components/ChordsTable';
 
 // Note definitions
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -30,6 +31,9 @@ export default function App() {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [audioCtx, setAudioCtx] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]].toLowerCase();
+  const currentScale = SCALES[mode][variationName];
 
   const initAudio = useCallback(() => {
     if (!audioCtx) {
@@ -63,9 +67,7 @@ export default function App() {
     initAudio();
     setIsPlaying(true);
 
-    const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]].toLowerCase();
-    const intervals = SCALES[mode][variationName];
-    const scaleIntervals = [...intervals, 12];
+    const scaleIntervals = [...currentScale, 12];
     const octave = 3;
 
     scaleIntervals.forEach((interval, index) => {
@@ -80,7 +82,7 @@ export default function App() {
     setTimeout(() => {
       setIsPlaying(false);
     }, scaleIntervals.length * 300);
-  }, [selectedRoot, audioCtx, isPlaying, mode, scaleVariation, playTone, initAudio]);
+  }, [selectedRoot, audioCtx, isPlaying, currentScale, playTone, initAudio]);
 
   const handleKeyClick = (noteIndex, octave) => {
     initAudio();
@@ -102,8 +104,7 @@ export default function App() {
     const relativeIndex = (noteIndex - selectedRoot + 12) % 12;
     const isRoot = noteIndex === selectedRoot;
     
-    const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]].toLowerCase();
-    const isActive = SCALES[mode][variationName].includes(relativeIndex);
+    const isActive = currentScale.includes(relativeIndex);
 
     return { isActive, isRoot };
   };
@@ -269,6 +270,13 @@ export default function App() {
           ))}
         </div>
       </div>
+
+      <ChordsTable 
+        selectedRoot={selectedRoot} 
+        mode={mode} 
+        scale={currentScale} 
+        playTone={playTone} 
+      />
 
       <div className="mt-8 flex gap-6 text-sm text-slate-400">
         <div className="flex items-center gap-2">
