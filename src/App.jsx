@@ -42,14 +42,17 @@ export default function App() {
     }
   }, [audioCtx]);
 
-  const playTone = useCallback((freq) => {
+  const playTone = useCallback((noteIndex, octave) => {
     if (!audioEnabled || !audioCtx) return;
+
+    const semitonesFromC3 = (octave * 12) + noteIndex;
+    const frequency = 130.81 * Math.pow(2, semitonesFromC3 / 12);
     
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
     
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
     
     gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
@@ -68,14 +71,13 @@ export default function App() {
     setIsPlaying(true);
 
     const scaleIntervals = [...currentScale, 12];
-    const octave = 3;
 
     scaleIntervals.forEach((interval, index) => {
-      const semitonesFromC3 = (octave * 12) + selectedRoot + interval;
-      const frequency = 130.81 * Math.pow(2, semitonesFromC3 / 12);
+      const noteIndex = (selectedRoot + interval) % 12;
+      const octave = (selectedRoot + interval) >= 12 ? 4 : 3;
 
       setTimeout(() => {
-        playTone(frequency);
+        playTone(noteIndex, octave);
       }, index * 300);
     });
 
@@ -86,10 +88,7 @@ export default function App() {
 
   const handleKeyClick = (noteIndex, octave) => {
     initAudio();
-    
-    const semitonesFromC3 = (octave * 12) + noteIndex;
-    const frequency = 130.81 * Math.pow(2, semitonesFromC3 / 12);
-    playTone(frequency);
+    playTone(noteIndex, octave);
 
     if (selectedRoot === noteIndex) {
       setSelectedRoot(null);
@@ -219,7 +218,7 @@ export default function App() {
                   <div key={`key-${octave}-${index}`} className="relative">
                     
                     <button
-                      onClick={() => handleKeyClick(index, octave)}
+                      onClick={() => handleKeyClick(index, octave + 3)}
                       className={`
                         w-14 h-48 border-b-4 border-l border-r border-slate-300 rounded-b-lg active:scale-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-4 group relative z-0
                         ${whiteStatus.isRoot 
@@ -246,7 +245,7 @@ export default function App() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleKeyClick(nextNoteIndex, octave);
+                          handleKeyClick(nextNoteIndex, octave + 3);
                         }}
                         className={`
                           absolute -right-4 top-0 w-8 h-32 border-b-8 border-slate-900 rounded-b-md z-20 active:scale-y-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-3 shadow-xl

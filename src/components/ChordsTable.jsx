@@ -90,11 +90,9 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
   const chords = Array.from({ length: 7 }, (_, i) => getChord(selectedRoot, scale, i + 1));
 
   const playChord = (chordNotes) => {
-    const octave = 4;
     chordNotes.forEach(noteIndex => {
-      const semitonesFromC3 = (octave * 12) + noteIndex;
-      const frequency = 130.81 * Math.pow(2, semitonesFromC3 / 12);
-      playTone(frequency);
+      const octave = (selectedRoot + noteIndex) >= 12 ? 4 : 3;
+      playTone(noteIndex, octave);
     });
   };
 
@@ -107,7 +105,7 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
             <th className="p-4">Degree</th>
             <th className="p-4">Triad</th>
             <th className="p-4">Chord</th>
-            <th className="p-4">Visualization</th>
+            <th className.jsx="p-4">Visualization</th>
             <th className="p-4">Play</th>
           </tr>
         </thead>
