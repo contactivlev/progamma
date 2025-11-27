@@ -1,18 +1,32 @@
 import React, { useState, useCallback } from 'react';
-import { Volume2, VolumeX, Music } from 'lucide-react';
+import { Volume2, VolumeX, Music, RefreshCw } from 'lucide-react';
 
 // Note definitions
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 // Interval patterns (semitones)
 const SCALES = {
-  major: [0, 2, 4, 5, 7, 9, 11], // W W H W W W H
-  minor: [0, 2, 3, 5, 7, 8, 10], // W H W W H W W (Natural Minor)
+  major: {
+    ionian: [0, 2, 4, 5, 7, 9, 11],
+    lydian: [0, 2, 4, 6, 7, 9, 11],
+    mixolydian: [0, 2, 4, 5, 7, 9, 10],
+  },
+  minor: {
+    natural: [0, 2, 3, 5, 7, 8, 10],
+    harmonic: [0, 2, 3, 5, 7, 8, 11],
+    melodic: [0, 2, 3, 5, 7, 9, 11],
+  },
+};
+
+const SCALE_VARIATIONS = {
+  major: ['Ionian', 'Lydian', 'Mixolydian'],
+  minor: ['Natural', 'Harmonic', 'Melodic'],
 };
 
 export default function App() {
   const [selectedRoot, setSelectedRoot] = useState(null); // Index 0-11
   const [mode, setMode] = useState('major'); // 'major' or 'minor'
+  const [scaleVariation, setScaleVariation] = useState({ major: 0, minor: 0 });
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [audioCtx, setAudioCtx] = useState(null);
 
@@ -47,15 +61,10 @@ export default function App() {
   const handleKeyClick = (noteIndex, octave) => {
     initAudio();
     
-    // Calculate frequency for sound (Simple equal temperament formula)
-    // A4 is 440Hz (Index 9 in our array). Let's define C3 as the start.
-    // C3 is roughly 130.81Hz.
-    // Formula: freq = 130.81 * (2 ^ (n/12)) where n is semitones from C3
     const semitonesFromC3 = (octave * 12) + noteIndex;
     const frequency = 130.81 * Math.pow(2, semitonesFromC3 / 12);
     playTone(frequency);
 
-    // Toggle logic
     if (selectedRoot === noteIndex) {
       setSelectedRoot(null);
     } else {
@@ -69,7 +78,9 @@ export default function App() {
 
     const relativeIndex = (noteIndex - selectedRoot + 12) % 12;
     const isRoot = noteIndex === selectedRoot;
-    const isActive = SCALES[mode].includes(relativeIndex);
+    
+    const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]].toLowerCase();
+    const isActive = SCALES[mode][variationName].includes(relativeIndex);
 
     return { isActive, isRoot };
   };
@@ -77,13 +88,24 @@ export default function App() {
   // Helper to get formatted scale name
   const getScaleName = () => {
     if (selectedRoot === null) return "Select a key";
-    return `${NOTES[selectedRoot]} ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+    const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]];
+    return `${NOTES[selectedRoot]} ${variationName}`;
+  };
+
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+  };
+
+  const handleVariationChange = () => {
+    setScaleVariation(prev => ({
+      ...prev,
+      [mode]: (prev[mode] + 1) % SCALE_VARIATIONS[mode].length,
+    }));
   };
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 font-sans select-none">
       
-      {/* Header & Controls */}
       <div className="w-full max-w-4xl mb-10 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent">
@@ -92,10 +114,8 @@ export default function App() {
           <p className="text-slate-400">Select a root note to see the scale</p>
         </div>
 
-        {/* Controls Bar */}
         <div className="bg-slate-800/50 p-6 rounded-2xl backdrop-blur-sm border border-slate-700 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           
-          {/* Active Scale Display */}
           <div className="flex items-center gap-3 min-w-[200px]">
             <div className={`p-3 rounded-xl ${
               selectedRoot !== null 
@@ -110,31 +130,40 @@ export default function App() {
             </div>
           </div>
 
-          {/* Mode Toggle */}
-          <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-700">
-            <button
-              onClick={() => setMode('major')}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                mode === 'major' 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
+          <div className="flex items-center gap-4">
+            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-700">
+              <button
+                onClick={() => handleModeChange('major')}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  mode === 'major' 
+                    ? 'bg-blue-600 text-white shadow-lg' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                Major
+              </button>
+              <button
+                onClick={() => handleModeChange('minor')}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  mode === 'minor' 
+                    ? 'bg-orange-600 text-white shadow-lg' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                Minor
+              </button>
+            </div>
+
+            <button 
+              onClick={handleVariationChange}
+              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg border border-slate-600"
+              title="Change Scale Variation"
             >
-              Major
-            </button>
-            <button
-              onClick={() => setMode('minor')}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                mode === 'minor' 
-                  ? 'bg-orange-600 text-white shadow-lg' 
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              Minor
+              <RefreshCw size={16} />
+              <span>{SCALE_VARIATIONS[mode][scaleVariation[mode]]}</span>
             </button>
           </div>
 
-          {/* Audio Toggle */}
           <button 
             onClick={() => setAudioEnabled(!audioEnabled)}
             className={`p-3 rounded-xl transition-colors ${audioEnabled ? 'bg-slate-700 text-green-400' : 'bg-slate-800 text-red-400'}`}
@@ -145,32 +174,24 @@ export default function App() {
         </div>
       </div>
 
-      {/* Piano Container */}
       <div className="relative w-full max-w-5xl overflow-x-auto pb-8 custom-scrollbar">
-        <div className="flex justify-center min-w-[800px]"> {/* min-w ensures scroll on mobile, center on desktop */}
+        <div className="flex justify-center min-w-[800px]">
           
-          {/* Render 2 Octaves */}
           {[0, 1].map((octave) => (
             <div key={`octave-${octave}`} className="flex relative">
               {NOTES.map((note, index) => {
                 const isBlackKey = note.includes('#');
-                if (isBlackKey) return null; // We handle black keys within the white key map below or separate
+                if (isBlackKey) return null;
 
-                // Find the black key immediately following this white key (if any)
-                // C has C#, D has D#, E has None, F has F#, G has G#, A has A#, B has None
                 const nextNoteIndex = (index + 1) % 12;
                 const hasBlackKey = NOTES[nextNoteIndex].includes('#');
                 
-                // Get status for the White Key
                 const whiteStatus = getScaleStatus(index);
-                
-                // Get status for the Black Key (if exists)
                 const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex) : { isActive: false, isRoot: false };
 
                 return (
                   <div key={`key-${octave}-${index}`} className="relative">
                     
-                    {/* White Key */}
                     <button
                       onClick={() => handleKeyClick(index, octave)}
                       className={`
@@ -195,7 +216,6 @@ export default function App() {
                       )}
                     </button>
 
-                    {/* Black Key (Positioned absolutely over the right border of the white key) */}
                     {hasBlackKey && (
                       <button
                         onClick={(e) => {
@@ -225,7 +245,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Legend / Instructions */}
       <div className="mt-8 flex gap-6 text-sm text-slate-400">
         <div className="flex items-center gap-2">
           <div className={`w-4 h-4 rounded-sm border ${mode === 'major' ? 'bg-blue-600 border-blue-800' : 'bg-orange-600 border-orange-800'}`}></div>
