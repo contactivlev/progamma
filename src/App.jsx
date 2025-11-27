@@ -71,10 +71,16 @@ export default function App() {
     setIsPlaying(true);
 
     const scaleIntervals = [...currentScale, 12];
+    let lastNoteIndex = -1;
+    let octaveOffset = 0;
 
     scaleIntervals.forEach((interval, index) => {
       const noteIndex = (selectedRoot + interval) % 12;
-      const octave = (selectedRoot + interval) >= 12 ? 4 : 3;
+      if (noteIndex < lastNoteIndex) {
+        octaveOffset++;
+      }
+      const octave = 3 + octaveOffset;
+      lastNoteIndex = noteIndex;
 
       setTimeout(() => {
         playTone(noteIndex, octave);

@@ -90,9 +90,17 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
   const chords = Array.from({ length: 7 }, (_, i) => getChord(selectedRoot, scale, i + 1));
 
   const playChord = (chordNotes) => {
-    chordNotes.forEach(noteIndex => {
-      const octave = (selectedRoot + noteIndex) >= 12 ? 4 : 3;
+    let lastNoteIndex = -1;
+    let octaveOffset = 0;
+    const sortedNotes = [...chordNotes].sort((a, b) => a - b);
+
+    sortedNotes.forEach(noteIndex => {
+      if (noteIndex < lastNoteIndex) {
+        octaveOffset++;
+      }
+      const octave = 3 + octaveOffset;
       playTone(noteIndex, octave);
+      lastNoteIndex = noteIndex;
     });
   };
 
