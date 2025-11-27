@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Volume2, VolumeX, Music, RefreshCw } from 'lucide-react';
+import { Volume2, VolumeX, Play, RefreshCw } from 'lucide-react';
 
 // Note definitions
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -29,14 +29,14 @@ export default function App() {
   const [scaleVariation, setScaleVariation] = useState({ major: 0, minor: 0 });
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [audioCtx, setAudioCtx] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  // Initialize Audio Context on first interaction to comply with browser policies
-  const initAudio = () => {
+  const initAudio = useCallback(() => {
     if (!audioCtx) {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       setAudioCtx(ctx);
     }
-  };
+  }, [audioCtx]);
 
   const playTone = useCallback((freq) => {
     if (!audioEnabled || !audioCtx) return;
@@ -57,7 +57,31 @@ export default function App() {
     osc.stop(audioCtx.currentTime + 0.5);
   }, [audioEnabled, audioCtx]);
 
-  // Handle key click
+  const playScale = useCallback(() => {
+    if (selectedRoot === null || !audioCtx || isPlaying) return;
+
+    initAudio();
+    setIsPlaying(true);
+
+    const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]].toLowerCase();
+    const intervals = SCALES[mode][variationName];
+    const scaleIntervals = [...intervals, 12];
+    const octave = 3;
+
+    scaleIntervals.forEach((interval, index) => {
+      const semitonesFromC3 = (octave * 12) + selectedRoot + interval;
+      const frequency = 130.81 * Math.pow(2, semitonesFromC3 / 12);
+
+      setTimeout(() => {
+        playTone(frequency);
+      }, index * 300);
+    });
+
+    setTimeout(() => {
+      setIsPlaying(false);
+    }, scaleIntervals.length * 300);
+  }, [selectedRoot, audioCtx, isPlaying, mode, scaleVariation, playTone, initAudio]);
+
   const handleKeyClick = (noteIndex, octave) => {
     initAudio();
     
@@ -72,7 +96,6 @@ export default function App() {
     }
   };
 
-  // Determine if a key is part of the currently selected scale
   const getScaleStatus = (noteIndex) => {
     if (selectedRoot === null) return { isActive: false, isRoot: false };
 
@@ -85,7 +108,6 @@ export default function App() {
     return { isActive, isRoot };
   };
 
-  // Helper to get formatted scale name
   const getScaleName = () => {
     if (selectedRoot === null) return "Select a key";
     const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]];
@@ -117,13 +139,16 @@ export default function App() {
         <div className="bg-slate-800/50 p-6 rounded-2xl backdrop-blur-sm border border-slate-700 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           
           <div className="flex items-center gap-3 min-w-[200px]">
-            <div className={`p-3 rounded-xl ${
-              selectedRoot !== null 
-                ? (mode === 'major' ? 'bg-blue-500/20 text-blue-300' : 'bg-orange-500/20 text-orange-300')
-                : 'bg-slate-700/50 text-slate-500'
-            }`}>
-              <Music size={24} />
-            </div>
+            <button
+              onClick={playScale}
+              disabled={selectedRoot === null || isPlaying}
+              className={`p-3 rounded-xl transition-colors ${
+                selectedRoot !== null && !isPlaying
+                  ? (mode === 'major' ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30' : 'bg-orange-500/20 text-orange-300 hover:bg-orange-500/30')
+                  : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+              }`}>
+              <Play size={24} />
+            </button>
             <div>
               <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Current Scale</div>
               <div className="text-xl font-bold">{getScaleName()}</div>
@@ -187,7 +212,7 @@ export default function App() {
                 const hasBlackKey = NOTES[nextNoteIndex].includes('#');
                 
                 const whiteStatus = getScaleStatus(index);
-                const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex) : { isActive: false, isRoot: false };
+                const blackStatus = hasBlackKey ? getStatusForNote(nextNoteIndex) : { isActive: false, isRoot: false };
 
                 return (
                   <div key={`key-${octave}-${index}`} className="relative">
