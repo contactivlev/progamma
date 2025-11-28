@@ -41,7 +41,6 @@ export default function App() {
 
   useEffect(() => {
     const handleNoteOn = (e) => {
-      initAudio();
       const { note } = e;
       const noteName = note.name;
       const octave = note.octave;
@@ -124,15 +123,15 @@ export default function App() {
   }, [selectedRoot, isPlaying, currentScale, playTone, initAudio]);
 
   const handleKeyClick = (noteIndex, octave, fromMidi = false) => {
-    if (!fromMidi) {
-      initAudio();
-    }
+    initAudio();
     playTone(noteIndex, octave);
 
-    if (selectedRoot && selectedRoot.note === noteIndex && selectedRoot.octave === octave) {
-      setSelectedRoot(null);
-    } else {
-      setSelectedRoot({ note: noteIndex, octave: octave });
+    if (!fromMidi) {
+      if (selectedRoot && selectedRoot.note === noteIndex && selectedRoot.octave === octave) {
+        setSelectedRoot(null);
+      } else {
+        setSelectedRoot({ note: noteIndex, octave: octave });
+      }
     }
   };
 
