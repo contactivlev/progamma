@@ -31,6 +31,23 @@ export default function App() {
   const audioCtxRef = useRef(null);
   const [playingKeys, setPlayingKeys] = useState([]);
   const [audioPromptState, setAudioPromptState] = useState('visible');
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const screenWidth = window.innerWidth;
+      if (screenWidth < 1024) {
+        setScale(screenWidth / 1024);
+      } else {
+        setScale(1);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Run on initial render
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const initAudio = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -202,126 +219,128 @@ export default function App() {
           </div>
         </div>
       )}
-      <div className="w-full max-w-4xl mb-10 space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-blue-400 bg-clip-text text-transparent">Scale Visualizer</h1>
-          <p className="text-slate-400">Select a root note to see the scale</p>
-        </div>
+      <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
+        <div className="w-full max-w-4xl mb-10 space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-blue-400 bg-clip-text text-transparent">Scale Visualizer</h1>
+            <p className="text-slate-400">Select a root note to see the scale</p>
+          </div>
 
-        <div className="bg-slate-800/50 p-6 rounded-2xl backdrop-blur-sm border border-slate-700 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3 min-w-[200px]">
-            <button
-              onClick={playScale}
-              disabled={selectedRoot === null || isPlaying}
-              className={`p-3 rounded-xl transition-colors ${selectedRoot !== null && !isPlaying ? (mode === 'major' ? 'bg-orange-500/20 text-orange-300 hover:bg-orange-500/30' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30') : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'}`}>
-              <Play size={24} />
-            </button>
-            <div>
-              <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Current Scale</div>
-              <div className="text-xl font-bold">{getScaleName()}</div>
+          <div className="bg-slate-800/50 p-6 rounded-2xl backdrop-blur-sm border border-slate-700 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3 min-w-[200px]">
+              <button
+                onClick={playScale}
+                disabled={selectedRoot === null || isPlaying}
+                className={`p-3 rounded-xl transition-colors ${selectedRoot !== null && !isPlaying ? (mode === 'major' ? 'bg-orange-500/20 text-orange-300 hover:bg-orange-500/30' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30') : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'}`}>
+                <Play size={24} />
+              </button>
+              <div>
+                <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Current Scale</div>
+                <div className="text-xl font-bold">{getScaleName()}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-700">
+                <button
+                  onClick={() => setMode('major')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${mode === 'major' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                  Major
+                </button>
+                <button
+                  onClick={() => setMode('minor')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${mode === 'minor' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                  Minor
+                </button>
+              </div>
+              <button
+                onClick={() => setScaleVariation(prev => ({ ...prev, [mode]: (prev[mode] + 1) % SCALE_VARIATIONS[mode].length }))}
+                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg border border-slate-600"
+                title="Change Scale Variation">
+                <RefreshCw size={16} />
+                <span>{SCALE_VARIATIONS[mode][scaleVariation[mode]]}</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className={`w-3 h-3 rounded-full ${midiConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <button
+                onClick={() => setAudioEnabled(!audioEnabled)}
+                className={`p-3 rounded-xl transition-colors ${audioEnabled ? 'bg-slate-700 text-green-400' : 'bg-slate-800 text-red-400'}`}
+                title="Toggle Sound">
+                {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
+              </button>
             </div>
           </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-700">
-              <button
-                onClick={() => setMode('major')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${mode === 'major' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
-                Major
-              </button>
-              <button
-                onClick={() => setMode('minor')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${mode === 'minor' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
-                Minor
-              </button>
-            </div>
-            <button
-              onClick={() => setScaleVariation(prev => ({ ...prev, [mode]: (prev[mode] + 1) % SCALE_VARIATIONS[mode].length }))}
-              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg border border-slate-600"
-              title="Change Scale Variation">
-              <RefreshCw size={16} />
-              <span>{SCALE_VARIATIONS[mode][scaleVariation[mode]]}</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className={`w-3 h-3 rounded-full ${midiConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <button
-              onClick={() => setAudioEnabled(!audioEnabled)}
-              className={`p-3 rounded-xl transition-colors ${audioEnabled ? 'bg-slate-700 text-green-400' : 'bg-slate-800 text-red-400'}`}
-              title="Toggle Sound">
-              {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
-            </button>
-          </div>
         </div>
-      </div>
 
-      <div className="relative w-full max-w-4xl overflow-x-auto pb-8 custom-scrollbar">
-        <div className="flex justify-center min-w-[800px]">
-          {[0, 1].map(octave => (
-            <div key={`octave-${octave}`} className="flex relative">
-              {NOTES.map((note, index) => {
-                const isBlackKey = note.includes('#');
-                if (isBlackKey) return null;
-                const nextNoteIndex = (index + 1) % 12;
-                const hasBlackKey = NOTES[nextNoteIndex].includes('#');
-                const currentOctave = octave + 3;
-                
-                const whiteKeyId = `${index}-${currentOctave}`;
-                const isWhiteKeyPlaying = playingKeys.includes(whiteKeyId);
-                const whiteStatus = getScaleStatus(index);
+        <div className="relative w-full max-w-4xl overflow-x-auto pb-8 custom-scrollbar">
+          <div className="flex justify-center min-w-[800px]">
+            {[0, 1].map(octave => (
+              <div key={`octave-${octave}`} className="flex relative">
+                {NOTES.map((note, index) => {
+                  const isBlackKey = note.includes('#');
+                  if (isBlackKey) return null;
+                  const nextNoteIndex = (index + 1) % 12;
+                  const hasBlackKey = NOTES[nextNoteIndex].includes('#');
+                  const currentOctave = octave + 3;
+                  
+                  const whiteKeyId = `${index}-${currentOctave}`;
+                  const isWhiteKeyPlaying = playingKeys.includes(whiteKeyId);
+                  const whiteStatus = getScaleStatus(index);
 
-                const blackKeyId = hasBlackKey ? `${nextNoteIndex}-${currentOctave}` : null;
-                const isBlackKeyPlaying = hasBlackKey && playingKeys.includes(blackKeyId);
-                const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex) : { isActive: false, isRoot: false };
+                  const blackKeyId = hasBlackKey ? `${nextNoteIndex}-${currentOctave}` : null;
+                  const isBlackKeyPlaying = hasBlackKey && playingKeys.includes(blackKeyId);
+                  const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex) : { isActive: false, isRoot: false };
 
-                return (
-                  <div key={`key-${octave}-${index}`} className="relative">
-                    <button
-                      onClick={() => handleKeyClick(index, currentOctave)}
-                      className={`w-14 h-48 border-b-4 border-l border-r rounded-b-lg active:scale-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-4 group relative z-0 
-                        ${
-                          isWhiteKeyPlaying 
-                            ? (mode === 'major' ? 'bg-orange-300' : 'bg-blue-300') 
-                            : whiteStatus.isRoot 
-                              ? (mode === 'major' ? 'bg-orange-600 border-orange-800 shadow-[0_0_20px_rgba(234,88,12,0.6)] z-10' : 'bg-blue-600 border-blue-800 shadow-[0_0_20px_rgba(37,99,235,0.6)] z-10') 
-                              : !whiteStatus.isRoot && whiteStatus.isActive 
-                                ? (mode === 'major' ? 'bg-orange-200 border-b-orange-300' : 'bg-blue-200 border-b-blue-300') 
-                                : 'bg-white hover:bg-gray-100'
-                        }
-                      `}>
-                      <span className={`font-bold text-sm ${whiteStatus.isRoot ? 'text-white' : whiteStatus.isActive ? 'text-slate-900' : 'text-slate-300 group-hover:text-slate-400'}`}>
-                        {note}{currentOctave}
-                      </span>
-                      {whiteStatus.isRoot && <div className="absolute bottom-2 w-2 h-2 rounded-full bg-white mb-6"></div>}
-                    </button>
-                    {hasBlackKey && (
+                  return (
+                    <div key={`key-${octave}-${index}`} className="relative">
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleKeyClick(nextNoteIndex, currentOctave); }}
-                        className={`absolute -right-4 top-0 w-8 h-32 border-b-8 rounded-b-md z-20 active:scale-y-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-3 shadow-xl 
+                        onClick={() => handleKeyClick(index, currentOctave)}
+                        className={`w-14 h-48 border-b-4 border-l border-r rounded-b-lg active:scale-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-4 group relative z-0 
                           ${
-                            isBlackKeyPlaying 
-                              ? (mode === 'major' ? 'bg-orange-500' : 'bg-blue-500') 
-                              : blackStatus.isRoot 
-                                ? (mode === 'major' ? 'bg-orange-600 border-orange-900 shadow-[0_0_15px_rgba(234,88,12,0.6)]' : 'bg-blue-600 border-blue-900 shadow-[0_0_15px_rgba(37,99,235,0.6)]') 
-                                : blackStatus.isActive 
-                                  ? (mode === 'major' ? 'bg-orange-400 border-orange-900' : 'bg-blue-400 border-blue-900') 
-                                  : 'bg-slate-800 border-black hover:bg-slate-700'
+                            isWhiteKeyPlaying 
+                              ? (mode === 'major' ? 'bg-orange-300' : 'bg-blue-300') 
+                              : whiteStatus.isRoot 
+                                ? (mode === 'major' ? 'bg-orange-600 border-orange-800 shadow-[0_0_20px_rgba(234,88,12,0.6)] z-10' : 'bg-blue-600 border-blue-800 shadow-[0_0_20px_rgba(37,99,235,0.6)] z-10') 
+                                : !whiteStatus.isRoot && whiteStatus.isActive 
+                                  ? (mode === 'major' ? 'bg-orange-200 border-b-orange-300' : 'bg-blue-200 border-b-blue-300') 
+                                  : 'bg-white hover:bg-gray-100'
                           }
                         `}>
-                        <span className={`text-[10px] font-bold ${blackStatus.isActive || blackStatus.isRoot ? 'text-white' : 'text-slate-600'}`}>
-                          {NOTES[nextNoteIndex]}
+                        <span className={`font-bold text-sm ${whiteStatus.isRoot ? 'text-white' : whiteStatus.isActive ? 'text-slate-900' : 'text-slate-300 group-hover:text-slate-400'}`}>
+                          {note}{currentOctave}
                         </span>
+                        {whiteStatus.isRoot && <div className="absolute bottom-2 w-2 h-2 rounded-full bg-white mb-6"></div>}
                       </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                      {hasBlackKey && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleKeyClick(nextNoteIndex, currentOctave); }}
+                          className={`absolute -right-4 top-0 w-8 h-32 border-b-8 rounded-b-md z-20 active:scale-y-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-3 shadow-xl 
+                            ${
+                              isBlackKeyPlaying 
+                                ? (mode === 'major' ? 'bg-orange-500' : 'bg-blue-500') 
+                                : blackStatus.isRoot 
+                                  ? (mode === 'major' ? 'bg-orange-600 border-orange-900 shadow-[0_0_15px_rgba(234,88,12,0.6)]' : 'bg-blue-600 border-blue-900 shadow-[0_0_15px_rgba(37,99,235,0.6)]') 
+                                  : blackStatus.isActive 
+                                    ? (mode === 'major' ? 'bg-orange-400 border-orange-900' : 'bg-blue-400 border-blue-900') 
+                                    : 'bg-slate-800 border-black hover:bg-slate-700'
+                            }
+                          `}>
+                          <span className={`text-[10px] font-bold ${blackStatus.isActive || blackStatus.isRoot ? 'text-white' : 'text-slate-600'}`}>
+                            {NOTES[nextNoteIndex]}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
+        <ChordsTable selectedRoot={selectedRoot} mode={mode} scale={currentScale} playTone={playTone} initAudio={initAudio} />
       </div>
-      <ChordsTable selectedRoot={selectedRoot} mode={mode} scale={currentScale} playTone={playTone} initAudio={initAudio} />
     </div>
   );
 }
