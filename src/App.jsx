@@ -148,7 +148,15 @@ export default function App() {
       const totalSemitones = selectedRoot.note + interval;
       const noteIndex = totalSemitones % 12;
       const octave = selectedRoot.octave + Math.floor(totalSemitones / 12);
-      setTimeout(() => playTone(noteIndex, octave), index * 300);
+      const keyId = `${noteIndex}-${octave}`;
+
+      setTimeout(() => {
+        playTone(noteIndex, octave);
+        setPlayingKeys(prev => [...prev, keyId]);
+        setTimeout(() => {
+          setPlayingKeys(prev => prev.filter(k => k !== keyId));
+        }, 250);
+      }, index * 300);
     });
 
     setTimeout(() => setIsPlaying(false), scaleIntervals.length * 300);
