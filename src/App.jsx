@@ -95,12 +95,9 @@ export default function App() {
   useEffect(() => {
     const handleNoteOn = (e) => {
       const { note } = e;
-      const noteName = note.name;
-      const octave = note.octave;
-      const noteIndex = NOTES.indexOf(noteName);
-      if (noteIndex !== -1) {
-        handleKeyClick(noteIndex, octave, true);
-      }
+      const noteIndex = note.number % 12;
+      const octave = Math.floor(note.number / 12) - 1;
+      handleKeyClick(noteIndex, octave, true);
     };
 
     WebMidi.enable()
