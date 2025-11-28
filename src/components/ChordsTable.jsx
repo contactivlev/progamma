@@ -11,7 +11,7 @@ const ChordRow = ({ degree, triad, chordName, notes, playChord, mode }) => {
       <div className="flex">
         {twoOctaves.map((note, index) => {
           const isBlackKey = note.includes('#');
-          const isHighlighted = notes.includes(index % 12);
+          const isHighlighted = notes.map(n => n.note).includes(index % 12);
 
           return (
             <div key={index} className="relative">
@@ -60,13 +60,19 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
   }
 
   const getChord = (root, scale, degree) => {
-    const scaleNotes = scale.map(interval => (root + interval) % 12);
-    const chordRoot = scaleNotes[degree - 1];
-    const third = scaleNotes[(degree + 1) % 7];
-    const fifth = scaleNotes[(degree + 3) % 7];
+    const getNoteDetails = (scaleDegree) => {
+        const totalSemitones = root.note + scale[scaleDegree % 7];
+        const noteIndex = totalSemitones % 12;
+        const octave = root.octave + Math.floor(totalSemitones / 12);
+        return { note: noteIndex, octave };
+    };
 
-    const thirdInterval = (third - chordRoot + 12) % 12;
-    const fifthInterval = (fifth - chordRoot + 12) % 12;
+    const chordRoot = getNoteDetails(degree - 1);
+    const third = getNoteDetails(degree + 1);
+    const fifth = getNoteDetails(degree + 3);
+
+    const thirdInterval = (third.note - chordRoot.note + 12) % 12;
+    const fifthInterval = (fifth.note - chordRoot.note + 12) % 12;
 
     let triad;
     if (thirdInterval === 4 && fifthInterval === 7) {
@@ -80,7 +86,7 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
     }
 
     return {
-      name: `${NOTES[chordRoot]} ${triad}`,
+      name: `${NOTES[chordRoot.note]} ${triad}`,
       notes: [chordRoot, third, fifth],
       degree,
       triad
@@ -90,17 +96,10 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
   const chords = Array.from({ length: 7 }, (_, i) => getChord(selectedRoot, scale, i + 1));
 
   const playChord = (chordNotes) => {
-    let lastNoteIndex = -1;
-    let octaveOffset = 0;
-    const sortedNotes = [...chordNotes].sort((a, b) => a - b);
-
-    sortedNotes.forEach(noteIndex => {
-      if (noteIndex < lastNoteIndex) {
-        octaveOffset++;
-      }
-      const octave = 3 + octaveOffset;
-      playTone(noteIndex, octave);
-      lastNoteIndex = noteIndex;
+    console.log('--- Playing Chord ---');
+    console.log('Using notes:', chordNotes.map(n => `${NOTES[n.note]}${n.octave}`));
+    chordNotes.forEach(note => {
+        playTone(note.note, note.octave);
     });
   };
 
@@ -113,7 +112,7 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
             <th className="p-4">Degree</th>
             <th className="p-4">Triad</th>
             <th className="p-4">Chord</th>
-            <th className.jsx="p-4">Visualization</th>
+            <th className="p-4">Visualization</th>
             <th className="p-4">Play</th>
           </tr>
         </thead>

@@ -44,6 +44,7 @@ export default function App() {
 
   const playTone = useCallback((noteIndex, octave) => {
     if (!audioEnabled || !audioCtx) return;
+    console.log(`Playing tone: ${NOTES[noteIndex]}${octave}`);
 
     const semitonesFromA4 = (octave - 4) * 12 + (noteIndex - 9);
     const frequency = 440 * Math.pow(2, semitonesFromA4 / 12);
@@ -69,18 +70,15 @@ export default function App() {
 
     initAudio();
     setIsPlaying(true);
+    console.log('--- Playing Scale ---');
+    console.log('Using selectedRoot:', selectedRoot);
 
     const scaleIntervals = [...currentScale, 12];
-    let lastNoteIndex = -1;
-    let octaveOffset = 0;
 
     scaleIntervals.forEach((interval, index) => {
-      const noteIndex = (selectedRoot.note + interval) % 12;
-      if (noteIndex < lastNoteIndex) {
-        octaveOffset++;
-      }
-      const octave = selectedRoot.octave + octaveOffset;
-      lastNoteIndex = noteIndex;
+      const totalSemitones = selectedRoot.note + interval;
+      const noteIndex = totalSemitones % 12;
+      const octave = selectedRoot.octave + Math.floor(totalSemitones / 12);
 
       setTimeout(() => {
         playTone(noteIndex, octave);
@@ -96,18 +94,21 @@ export default function App() {
     initAudio();
     playTone(noteIndex, octave);
 
-    if (selectedRoot && selectedRoot.note === noteIndex) {
+    console.log('Key clicked:', { note: NOTES[noteIndex], octave });
+    if (selectedRoot && selectedRoot.note === noteIndex && selectedRoot.octave === octave) {
+      console.log('Deselecting root.');
       setSelectedRoot(null);
     } else {
+      console.log('Setting selectedRoot to:', { note: noteIndex, octave: octave });
       setSelectedRoot({ note: noteIndex, octave: octave });
     }
   };
 
-  const getScaleStatus = (noteIndex) => {
+  const getScaleStatus = (noteIndex, octave) => {
     if (selectedRoot === null) return { isActive: false, isRoot: false };
 
     const relativeIndex = (noteIndex - selectedRoot.note + 12) % 12;
-    const isRoot = noteIndex === selectedRoot.note;
+    const isRoot = noteIndex === selectedRoot.note && octave === selectedRoot.octave;
 
     const isActive = currentScale.includes(relativeIndex);
 
@@ -217,14 +218,15 @@ export default function App() {
                 const nextNoteIndex = (index + 1) % 12;
                 const hasBlackKey = NOTES[nextNoteIndex].includes('#');
 
-                const whiteStatus = getScaleStatus(index);
-                const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex) : { isActive: false, isRoot: false };
+                const currentOctave = octave + 3;
+                const whiteStatus = getScaleStatus(index, currentOctave);
+                const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex, currentOctave) : { isActive: false, isRoot: false };
 
                 return (
                   <div key={`key-${octave}-${index}`} className="relative">
 
                     <button
-                      onClick={() => handleKeyClick(index, octave + 3)}
+                      onClick={() => handleKeyClick(index, currentOctave)}
                       className={`
                         w-14 h-48 border-b-4 border-l border-r border-slate-300 rounded-b-lg active:scale-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-4 group relative z-0
                         ${whiteStatus.isRoot
@@ -240,7 +242,7 @@ export default function App() {
                         whiteStatus.isRoot ? 'text-white' :
                         whiteStatus.isActive ? 'text-slate-900' : 'text-slate-300 group-hover:text-slate-400'
                       }`}>
-                        {note}{octave + 3}
+                        {note}{currentOctave}
                       </span>
                       {whiteStatus.isRoot && (
                         <div className="absolute bottom-2 w-2 h-2 rounded-full bg-white mb-6"></div>
@@ -251,7 +253,7 @@ export default function App() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleKeyClick(nextNoteIndex, octave + 3);
+                          handleKeyClick(nextNoteIndex, currentOctave);
                         }}
                         className={`
                           absolute -right-4 top-0 w-8 h-32 border-b-8 border-slate-900 rounded-b-md z-20 active:scale-y-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-3 shadow-xl
@@ -277,7 +279,7 @@ export default function App() {
       </div>
 
       <ChordsTable
-        selectedRoot={selectedRoot ? selectedRoot.note : null}
+        selectedRoot={selectedRoot}
         mode={mode}
         scale={currentScale}
         playTone={playTone}
