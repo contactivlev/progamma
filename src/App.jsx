@@ -36,8 +36,8 @@ export default function App() {
   useEffect(() => {
     const handleResize = () => {
       const screenWidth = window.innerWidth;
-      if (screenWidth < 1024) {
-        setScale(screenWidth / 1024);
+      if (screenWidth < 896) {
+        setScale(screenWidth / 896);
       } else {
         setScale(1);
       }
@@ -226,7 +226,7 @@ export default function App() {
             <p className="text-slate-400">Select a root note to see the scale</p>
           </div>
 
-          <div className="bg-slate-800/50 p-6 rounded-2xl backdrop-blur-sm border border-slate-700 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="bg-slate-800/50 p-6 rounded-2xl backdrop-blur-sm border border-slate-700 shadow-xl flex flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3 min-w-[200px]">
               <button
                 onClick={playScale}

@@ -52,7 +52,7 @@ const ChordRow = ({ degree, chordName, notes, playChord, mode }) => {
       <td className="p-4">{degree}</td>
       <td className="p-4">{chordName}</td>
       <td className="p-4">{formattedNotes}</td>
-      <td className="p-4">
+      <td className-="p-4">
         <MiniKeyboard notes={notes} mode={mode} />
       </td>
       <td className="p-4">
@@ -158,14 +158,14 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone, initAudio }) => {
           </button>
         </div>
       </div>
-      <table className="w-full table-fixed text-left bg-slate-800/50 rounded-2xl border-collapse">
+      <table className="w-[56rem] table-fixed text-left bg-slate-800/50 rounded-2xl border-collapse">
         <thead>
           <tr className="border-b border-slate-700">
-            <th className="p-4 w-[10%]">Degree</th>
-            <th className="p-4 w-[24%]">Chord</th>
-            <th className="p-4 w-[14.4%]">Notes</th>
-            <th className="p-4 w-[41.6%]">Visualization</th>
-            <th className="p-4 w-[10%]">Play</th>
+            <th className="p-4 w-[5.5rem]">Degree</th>
+            <th className="p-4 w-[13.5rem]">Chord</th>
+            <th className="p-4 w-[8rem]">Notes</th>
+            <th className="p-4 w-[23rem]">Visualization</th>
+            <th className="p-4 w-[6rem]">Play</th>
           </tr>
         </thead>
         <tbody>
