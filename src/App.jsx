@@ -36,6 +36,10 @@ export default function App() {
   const [highlightedChord, setHighlightedChord] = useState(null);
   const [heldNotes, setHeldNotes] = useState(new Set());
   const recognitionTimeoutRef = useRef(null);
+  const [currentScaleStep, setCurrentScaleStep] = useState(0);
+  const [completedScales, setCompletedScales] = useState(0);
+  const [bestScore, setBestScore] = useState(0);
+  const scaleTimeoutRef = useRef(null);
 
 
   useEffect(() => {
@@ -156,6 +160,15 @@ export default function App() {
     )
     : [];
 
+    const resetScaleCounter = useCallback(() => {
+      if (completedScales > bestScore) {
+        setBestScore(completedScales);
+      }
+      setCurrentScaleStep(0);
+      setCompletedScales(0);
+    }, [completedScales, bestScore]);
+  
+
   const handleKeyClick = useCallback((noteIndex, octave, fromMidi = false) => {
     if (fromMidi && (!audioCtxRef.current || audioCtxRef.current.state === 'suspended')) return;
 
@@ -171,13 +184,15 @@ export default function App() {
     } else {
       setSelectedRoot(prev => {
         if (prev && prev.note === noteIndex) {
+          resetScaleCounter();
           return null;
         } else {
+          resetScaleCounter();
           return { note: noteIndex, octave: octave };
         }
       });
     }
-  }, [initAudio, playTone]);
+  }, [initAudio, playTone, resetScaleCounter]);
 
   const recognizeChord = useCallback((playedNotes) => {
     if (!chords.length) return;
@@ -203,6 +218,29 @@ export default function App() {
       const noteIndex = note.number % 12;
       const octave = Math.floor(note.number / 12) - 1;
       handleKeyClick(noteIndex, octave, true);
+
+      if (selectedRoot) {
+        if (scaleTimeoutRef.current) {
+          clearTimeout(scaleTimeoutRef.current);
+        }
+  
+        const expectedNoteIndex = (selectedRoot.note + currentScale[currentScaleStep]) % 12;
+  
+        if (noteIndex === expectedNoteIndex) {
+          if (currentScaleStep === 6) {
+            setCompletedScales(prev => prev + 1);
+            setCurrentScaleStep(0);
+          } else {
+            setCurrentScaleStep(prev => prev + 1);
+          }
+        } else {
+          resetScaleCounter();
+        }
+  
+        scaleTimeoutRef.current = setTimeout(() => {
+          resetScaleCounter();
+        }, 2000);
+      }
 
       setHeldNotes(prev => {
         const newHeldNotes = new Set(prev);
@@ -253,8 +291,11 @@ export default function App() {
         input.removeListener('noteon');
         input.removeListener('noteoff');
       });
+      if (scaleTimeoutRef.current) {
+        clearTimeout(scaleTimeoutRef.current);
+      }
     };
-  }, [handleKeyClick]);
+  }, [handleKeyClick, selectedRoot, currentScale, currentScaleStep, resetScaleCounter]);
 
   useEffect(() => {
     if (recognitionTimeoutRef.current) {
@@ -344,6 +385,11 @@ export default function App() {
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-blue-400 bg-clip-text text-transparent">Scale Visualizer</h1>
             <p className="text-slate-400">Select a root note to see the scale</p>
+            {selectedRoot && (
+              <p className="text-slate-300 text-lg">
+                Scales played: <span className="font-bold text-orange-400">{currentScaleStep}/7</span> <span className="font-bold text-blue-400">{completedScales}</span>, best result: <span className="font-bold text-green-400">{bestScore}</span>
+              </p>
+            )}
           </div>
 
           <div className="bg-slate-800/50 p-6 rounded-2xl backdrop-blur-sm border border-slate-700 shadow-xl flex flex-row items-center justify-between gap-6">
