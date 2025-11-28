@@ -52,11 +52,11 @@ const ChordRow = ({ degree, chordName, notes, playChord, mode }) => {
       <td className="p-4">{degree}</td>
       <td className="p-4">{chordName}</td>
       <td className="p-4">{formattedNotes}</td>
-      <td className-="p-4">
+      <td className="p-4">
         <MiniKeyboard notes={notes} mode={mode} />
       </td>
-      <td className="p-4">
-        <button onClick={playChord} className="p-2 rounded-full bg-slate-700 hover:bg-slate-600">
+      <td className="p-0">
+        <button onClick={playChord} className="w-full h-20 flex items-center justify-center bg-slate-800 hover:bg-slate-700 transition-colors">
           <Play size={20} />
         </button>
       </td>
@@ -158,14 +158,14 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone, initAudio }) => {
           </button>
         </div>
       </div>
-      <table className="w-[56rem] table-fixed text-left bg-slate-800/50 rounded-2xl border-collapse">
+      <table className="w-[56rem] table-fixed text-left bg-slate-800/50 rounded-2xl border-collapse overflow-hidden">
         <thead>
           <tr className="border-b border-slate-700">
             <th className="p-4 w-[5.5rem]">Degree</th>
             <th className="p-4 w-[13.5rem]">Chord</th>
             <th className="p-4 w-[8rem]">Notes</th>
-            <th className="p-4 w-[23rem]">Visualization</th>
-            <th className="p-4 w-[6rem]">Play</th>
+            <th className="p-4 w-[24rem]">Visualization</th>
+            <th className="p-4 w-20 text-right">Play</th>
           </tr>
         </thead>
         <tbody>
