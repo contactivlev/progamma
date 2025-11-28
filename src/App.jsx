@@ -206,7 +206,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="relative w-full max-w-5xl overflow-x-auto pb-8 custom-scrollbar">
+      <div className="relative w-full max-w-4xl overflow-x-auto pb-8 custom-scrollbar">
         <div className="flex justify-center min-w-[800px]">
 
           {[0, 1].map((octave) => (

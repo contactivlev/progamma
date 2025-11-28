@@ -48,7 +48,7 @@ const ChordRow = ({ degree, chordName, notes, playChord, mode }) => {
   const formattedNotes = notes.map(n => NOTES[n.note]).join('-');
 
   return (
-    <tr className="border-b border-slate-700">
+    <tr className="border-b border-slate-700 last:border-b-0">
       <td className="p-4">{degree}</td>
       <td className="p-4">{chordName}</td>
       <td className="p-4">{formattedNotes}</td>
@@ -136,7 +136,7 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
   };
 
   return (
-    <div className="w-full max-w-5xl mt-8">
+    <div className="w-full max-w-4xl mt-8">
       <div className="flex justify-center mb-4">
         <div className="flex rounded-lg bg-slate-700 p-1">
           <button
