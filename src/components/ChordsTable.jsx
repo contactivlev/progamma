@@ -162,8 +162,8 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
           <tr className="border-b border-slate-700">
             <th className="p-4 w-[10%]">Degree</th>
             <th className="p-4 w-[24%]">Chord</th>
-            <th className="p-4 w-[12%]">Notes</th>
-            <th className="p-4 w-[44%]">Visualization</th>
+            <th className="p-4 w-[14.4%]">Notes</th>
+            <th className="p-4 w-[41.6%]">Visualization</th>
             <th className="p-4 w-[10%]">Play</th>
           </tr>
         </thead>
