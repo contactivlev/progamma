@@ -29,6 +29,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [midiConnected, setMidiConnected] = useState(false);
   const audioCtxRef = useRef(null);
+  const [playingKeys, setPlayingKeys] = useState([]);
 
   const initAudio = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -38,6 +39,45 @@ export default function App() {
       audioCtxRef.current.resume();
     }
   }, []);
+
+  const playTone = useCallback((noteIndex, octave) => {
+    if (!audioEnabled || !audioCtxRef.current) return;
+
+    const semitonesFromA4 = (octave - 4) * 12 + (noteIndex - 9);
+    const frequency = 440 * Math.pow(2, semitonesFromA4 / 12);
+
+    const osc = audioCtxRef.current.createOscillator();
+    const gainNode = audioCtxRef.current.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(frequency, audioCtxRef.current.currentTime);
+    gainNode.gain.setValueAtTime(0.3, audioCtxRef.current.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtxRef.current.currentTime + 1.5);
+    osc.connect(gainNode);
+    gainNode.connect(audioCtxRef.current.destination);
+
+    osc.start();
+    osc.stop(audioCtxRef.current.currentTime + 1.5);
+  }, [audioEnabled]);
+
+  const handleKeyClick = useCallback((noteIndex, octave, fromMidi = false) => {
+    initAudio();
+    playTone(noteIndex, octave);
+    const keyId = `${noteIndex}-${octave}`;
+
+    if (fromMidi) {
+      setPlayingKeys(prev => [...prev, keyId]);
+      setTimeout(() => {
+        setPlayingKeys(prev => prev.filter(k => k !== keyId));
+      }, 200);
+    } else {
+      if (selectedRoot && selectedRoot.note === noteIndex && selectedRoot.octave === octave) {
+        setSelectedRoot(null);
+      } else {
+        setSelectedRoot({ note: noteIndex, octave: octave });
+      }
+    }
+  }, [initAudio, playTone, selectedRoot]);
 
   useEffect(() => {
     const handleNoteOn = (e) => {
@@ -80,30 +120,10 @@ export default function App() {
     return () => {
       WebMidi.disable();
     };
-  }, [initAudio]);
+  }, [handleKeyClick]);
 
   const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]].toLowerCase();
   const currentScale = SCALES[mode][variationName];
-
-  const playTone = useCallback((noteIndex, octave) => {
-    if (!audioEnabled || !audioCtxRef.current) return;
-
-    const semitonesFromA4 = (octave - 4) * 12 + (noteIndex - 9);
-    const frequency = 440 * Math.pow(2, semitonesFromA4 / 12);
-
-    const osc = audioCtxRef.current.createOscillator();
-    const gainNode = audioCtxRef.current.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(frequency, audioCtxRef.current.currentTime);
-    gainNode.gain.setValueAtTime(0.3, audioCtxRef.current.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtxRef.current.currentTime + 1.5);
-    osc.connect(gainNode);
-    gainNode.connect(audioCtxRef.current.destination);
-
-    osc.start();
-    osc.stop(audioCtxRef.current.currentTime + 1.5);
-  }, [audioEnabled]);
 
   const playScale = useCallback(() => {
     if (selectedRoot === null || isPlaying) return;
@@ -121,19 +141,6 @@ export default function App() {
 
     setTimeout(() => setIsPlaying(false), scaleIntervals.length * 300);
   }, [selectedRoot, isPlaying, currentScale, playTone, initAudio]);
-
-  const handleKeyClick = (noteIndex, octave, fromMidi = false) => {
-    initAudio();
-    playTone(noteIndex, octave);
-
-    if (!fromMidi) {
-      if (selectedRoot && selectedRoot.note === noteIndex && selectedRoot.octave === octave) {
-        setSelectedRoot(null);
-      } else {
-        setSelectedRoot({ note: noteIndex, octave: octave });
-      }
-    }
-  };
 
   const getScaleStatus = (noteIndex, octave) => {
     if (selectedRoot === null) return { isActive: false, isRoot: false };
@@ -215,14 +222,30 @@ export default function App() {
                 const nextNoteIndex = (index + 1) % 12;
                 const hasBlackKey = NOTES[nextNoteIndex].includes('#');
                 const currentOctave = octave + 3;
+                
+                const whiteKeyId = `${index}-${currentOctave}`;
+                const isWhiteKeyPlaying = playingKeys.includes(whiteKeyId);
                 const whiteStatus = getScaleStatus(index, currentOctave);
+
+                const blackKeyId = hasBlackKey ? `${nextNoteIndex}-${currentOctave}` : null;
+                const isBlackKeyPlaying = hasBlackKey && playingKeys.includes(blackKeyId);
                 const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex, currentOctave) : { isActive: false, isRoot: false };
 
                 return (
                   <div key={`key-${octave}-${index}`} className="relative">
                     <button
                       onClick={() => handleKeyClick(index, currentOctave)}
-                      className={`w-14 h-48 border-b-4 border-l border-r border-slate-300 rounded-b-lg active:scale-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-4 group relative z-0 ${whiteStatus.isRoot ? (mode === 'major' ? 'bg-orange-600 border-orange-800 shadow-[0_0_20px_rgba(234,88,12,0.6)] z-10' : 'bg-blue-600 border-blue-800 shadow-[0_0_20px_rgba(37,99,235,0.6)] z-10') : ''} ${!whiteStatus.isRoot && whiteStatus.isActive ? (mode === 'major' ? 'bg-orange-200 border-b-orange-300' : 'bg-blue-200 border-b-blue-300') : ''} ${!whiteStatus.isActive && !whiteStatus.isRoot ? 'bg-white hover:bg-gray-100' : ''}`}>
+                      className={`w-14 h-48 border-b-4 border-l border-r rounded-b-lg active:scale-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-4 group relative z-0 
+                        ${
+                          isWhiteKeyPlaying 
+                            ? (mode === 'major' ? 'bg-orange-300' : 'bg-blue-300') 
+                            : whiteStatus.isRoot 
+                              ? (mode === 'major' ? 'bg-orange-600 border-orange-800 shadow-[0_0_20px_rgba(234,88,12,0.6)] z-10' : 'bg-blue-600 border-blue-800 shadow-[0_0_20px_rgba(37,99,235,0.6)] z-10') 
+                              : !whiteStatus.isRoot && whiteStatus.isActive 
+                                ? (mode === 'major' ? 'bg-orange-200 border-b-orange-300' : 'bg-blue-200 border-b-blue-300') 
+                                : 'bg-white hover:bg-gray-100'
+                        }
+                      `}>
                       <span className={`font-bold text-sm ${whiteStatus.isRoot ? 'text-white' : whiteStatus.isActive ? 'text-slate-900' : 'text-slate-300 group-hover:text-slate-400'}`}>
                         {note}{currentOctave}
                       </span>
@@ -231,7 +254,17 @@ export default function App() {
                     {hasBlackKey && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleKeyClick(nextNoteIndex, currentOctave); }}
-                        className={`absolute -right-4 top-0 w-8 h-32 border-b-8 border-slate-900 rounded-b-md z-20 active:scale-y-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-3 shadow-xl ${blackStatus.isRoot ? (mode === 'major' ? 'bg-orange-600 border-orange-900 shadow-[0_0_15px_rgba(234,88,12,0.6)]' : 'bg-blue-600 border-blue-900 shadow-[0_0_15px_rgba(37,99,235,0.6)]') : blackStatus.isActive ? (mode === 'major' ? 'bg-orange-400 border-orange-900' : 'bg-blue-400 border-blue-900') : 'bg-slate-800 border-black hover:bg-slate-700'}`}>
+                        className={`absolute -right-4 top-0 w-8 h-32 border-b-8 rounded-b-md z-20 active:scale-y-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-3 shadow-xl 
+                          ${
+                            isBlackKeyPlaying 
+                              ? (mode === 'major' ? 'bg-orange-500' : 'bg-blue-500') 
+                              : blackStatus.isRoot 
+                                ? (mode === 'major' ? 'bg-orange-600 border-orange-900 shadow-[0_0_15px_rgba(234,88,12,0.6)]' : 'bg-blue-600 border-blue-900 shadow-[0_0_15px_rgba(37,99,235,0.6)]') 
+                                : blackStatus.isActive 
+                                  ? (mode === 'major' ? 'bg-orange-400 border-orange-900' : 'bg-blue-400 border-blue-900') 
+                                  : 'bg-slate-800 border-black hover:bg-slate-700'
+                          }
+                        `}>
                         <span className={`text-[10px] font-bold ${blackStatus.isActive || blackStatus.isRoot ? 'text-white' : 'text-slate-600'}`}>
                           {NOTES[nextNoteIndex]}
                         </span>
