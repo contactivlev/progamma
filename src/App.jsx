@@ -56,13 +56,13 @@ export default function App() {
     osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
 
     gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
 
     osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
 
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.5);
+    osc.stop(audioCtx.currentTime + 1.5);
   }, [audioEnabled, audioCtx]);
 
   const playScale = useCallback(() => {
