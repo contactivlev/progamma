@@ -116,14 +116,14 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
   return (
     <div className="w-full max-w-5xl mt-8">
       <h2 className="text-2xl font-bold mb-4 text-center">Diatonic Chords</h2>
-      <table className="w-full text-left bg-slate-800/50 rounded-2xl border-collapse">
+      <table className="w-full table-fixed text-left bg-slate-800/50 rounded-2xl border-collapse">
         <thead>
           <tr className="border-b border-slate-700">
-            <th className="p-4">Degree</th>
-            <th className="p-4">Chord</th>
-            <th className="p-4">Notes</th>
-            <th className="p-4">Visualization</th>
-            <th className="p-4">Play</th>
+            <th className="p-4 w-[10%]">Degree</th>
+            <th className="p-4 w-[20%]">Chord</th>
+            <th className="p-4 w-[25%]">Notes</th>
+            <th className="p-4 w-[35%]">Visualization</th>
+            <th className="p-4 w-[10%]">Play</th>
           </tr>
         </thead>
         <tbody>
