@@ -64,7 +64,7 @@ const ChordRow = ({ degree, chordName, notes, playChord, mode }) => {
   );
 };
 
-const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
+const ChordsTable = ({ selectedRoot, mode, scale, playTone, initAudio }) => {
   const [chordType, setChordType] = useState('triads');
 
   const getNoteDetails = (root, scale, scaleDegree) => {
@@ -130,6 +130,7 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
     : [];
 
   const playChord = (chordNotes) => {
+    initAudio();
     chordNotes.forEach(note => {
       playTone(note.note, note.octave);
     });
