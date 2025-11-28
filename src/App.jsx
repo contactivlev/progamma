@@ -83,7 +83,7 @@ export default function App() {
       }, 200);
     } else {
       setSelectedRoot(prev => {
-        if (prev && prev.note === noteIndex && prev.octave === octave) {
+        if (prev && prev.note === noteIndex) {
           return null;
         } else {
           return { note: noteIndex, octave: octave };
@@ -154,10 +154,10 @@ export default function App() {
     setTimeout(() => setIsPlaying(false), scaleIntervals.length * 300);
   }, [selectedRoot, isPlaying, currentScale, playTone, initAudio]);
 
-  const getScaleStatus = (noteIndex, octave) => {
+  const getScaleStatus = (noteIndex) => {
     if (selectedRoot === null) return { isActive: false, isRoot: false };
     const relativeIndex = (noteIndex - selectedRoot.note + 12) % 12;
-    const isRoot = noteIndex === selectedRoot.note && octave === selectedRoot.octave;
+    const isRoot = noteIndex === selectedRoot.note;
     const isActive = currentScale.includes(relativeIndex);
     return { isActive, isRoot };
   };
@@ -172,7 +172,7 @@ export default function App() {
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 font-sans select-none pt-10">
       {audioPromptState !== 'hidden' && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-slate-800 p-8 rounded-2xl shadow-xl text-center">
+          <div className="bg-slate-800 p-8 rounded-2xl shadow-xl text-center flex flex-col items-center">
             {audioPromptState === 'visible' ? (
               <>
                 <h2 className="text-2xl font-bold mb-4">Enable Audio</h2>
@@ -261,11 +261,11 @@ export default function App() {
                 
                 const whiteKeyId = `${index}-${currentOctave}`;
                 const isWhiteKeyPlaying = playingKeys.includes(whiteKeyId);
-                const whiteStatus = getScaleStatus(index, currentOctave);
+                const whiteStatus = getScaleStatus(index);
 
                 const blackKeyId = hasBlackKey ? `${nextNoteIndex}-${currentOctave}` : null;
                 const isBlackKeyPlaying = hasBlackKey && playingKeys.includes(blackKeyId);
-                const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex, currentOctave) : { isActive: false, isRoot: false };
+                const blackStatus = hasBlackKey ? getScaleStatus(nextNoteIndex) : { isActive: false, isRoot: false };
 
                 return (
                   <div key={`key-${octave}-${index}`} className="relative">
