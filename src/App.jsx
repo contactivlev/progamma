@@ -71,13 +71,15 @@ export default function App() {
         setPlayingKeys(prev => prev.filter(k => k !== keyId));
       }, 200);
     } else {
-      if (selectedRoot && selectedRoot.note === noteIndex && selectedRoot.octave === octave) {
-        setSelectedRoot(null);
-      } else {
-        setSelectedRoot({ note: noteIndex, octave: octave });
-      }
+      setSelectedRoot(prev => {
+        if (prev && prev.note === noteIndex && prev.octave === octave) {
+          return null;
+        } else {
+          return { note: noteIndex, octave: octave };
+        }
+      });
     }
-  }, [initAudio, playTone, selectedRoot]);
+  }, [initAudio, playTone]);
 
   useEffect(() => {
     const handleNoteOn = (e) => {
@@ -97,8 +99,8 @@ export default function App() {
 
         const setupListeners = () => {
           WebMidi.inputs.forEach(input => {
-            input.removeListener('noteon', 'all', handleNoteOn);
-            input.addListener('noteon', 'all', handleNoteOn);
+            input.removeListener('noteon');
+            input.addListener('noteon', handleNoteOn);
           });
         };
 
@@ -118,7 +120,9 @@ export default function App() {
       });
 
     return () => {
-      WebMidi.disable();
+      WebMidi.inputs.forEach(input => {
+        input.removeListener('noteon');
+      });
     };
   }, [handleKeyClick]);
 
