@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Volume2, VolumeX, Play, RefreshCw } from 'lucide-react';
+import { Volume2, VolumeX, Play, RefreshCw, CheckCircle } from 'lucide-react';
 import ChordsTable from './components/ChordsTable';
 import { WebMidi } from 'webmidi';
 
@@ -30,6 +30,7 @@ export default function App() {
   const [midiConnected, setMidiConnected] = useState(false);
   const audioCtxRef = useRef(null);
   const [playingKeys, setPlayingKeys] = useState([]);
+  const [audioPromptState, setAudioPromptState] = useState('visible');
 
   const initAudio = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -39,6 +40,14 @@ export default function App() {
       audioCtxRef.current.resume();
     }
   }, []);
+
+  const handleEnableAudio = () => {
+    initAudio();
+    setAudioPromptState('confirmed');
+    setTimeout(() => {
+      setAudioPromptState('hidden');
+    }, 1500);
+  };
 
   const playTone = useCallback((noteIndex, octave) => {
     if (!audioEnabled || !audioCtxRef.current) return;
@@ -61,6 +70,8 @@ export default function App() {
   }, [audioEnabled]);
 
   const handleKeyClick = useCallback((noteIndex, octave, fromMidi = false) => {
+    if (fromMidi && (!audioCtxRef.current || audioCtxRef.current.state === 'suspended')) return;
+
     initAudio();
     playTone(noteIndex, octave);
     const keyId = `${noteIndex}-${octave}`;
@@ -162,6 +173,30 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 font-sans select-none pt-10">
+      {audioPromptState !== 'hidden' && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-800 p-8 rounded-2xl shadow-xl text-center">
+            {audioPromptState === 'visible' ? (
+              <>
+                <h2 className="text-2xl font-bold mb-4">Enable Audio</h2>
+                <p className="text-slate-400 mb-6">Click the button to enable audio playback.</p>
+                <button
+                  onClick={handleEnableAudio}
+                  className="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors hover:bg-orange-700 flex items-center"
+                >
+                  <Volume2 className="inline-block mr-2" />
+                  Enable Audio
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center text-green-400">
+                <CheckCircle className="mr-2" />
+                <p className="text-xl font-medium">Audio Enabled!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-4xl mb-10 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-blue-400 bg-clip-text text-transparent">Scale Visualizer</h1>
