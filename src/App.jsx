@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Volume2, VolumeX, Play, RefreshCw } from 'lucide-react';
 import ChordsTable from './components/ChordsTable';
-import { WebMidi } from 'web-midi-api';
+import { WebMidi } from 'webmidi';
 
 // Note definitions
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -32,12 +32,33 @@ export default function App() {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [audioCtx, setAudioCtx] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [midiConnected, setMidiConnected] = useState(false);
 
   useEffect(() => {
     WebMidi.enable()
       .then(() => {
         console.log('WebMidi enabled!');
-        console.log('Inputs:', WebMidi.inputs);
+        setMidiConnected(WebMidi.inputs.length > 0);
+
+        WebMidi.addListener('connected', () => {
+          setMidiConnected(true);
+          WebMidi.inputs.forEach(input => {
+            input.addListener('noteon', 'all', e => {
+              const { note } = e;
+              const noteName = note.name;
+              const octave = note.octave;
+              const noteIndex = NOTES.indexOf(noteName);
+
+              if (noteIndex !== -1) {
+                handleKeyClick(noteIndex, octave);
+              }
+            });
+          });
+        });
+
+        WebMidi.addListener('disconnected', () => {
+          setMidiConnected(WebMidi.inputs.length > 0);
+        });
 
         WebMidi.inputs.forEach(input => {
           input.addListener('noteon', 'all', e => {
@@ -57,9 +78,6 @@ export default function App() {
       });
 
     return () => {
-      WebMidi.inputs.forEach(input => {
-        input.removeListener('noteon', 'all');
-      });
       WebMidi.disable();
     };
   }, []);
@@ -229,13 +247,16 @@ export default function App() {
             </button>
           </div>
 
-          <button
-            onClick={() => setAudioEnabled(!audioEnabled)}
-            className={`p-3 rounded-xl transition-colors ${audioEnabled ? 'bg-slate-700 text-green-400' : 'bg-slate-800 text-red-400'}`}
-            title="Toggle Sound"
-          >
-            {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
-          </button>
+          <div className="flex items-center gap-4">
+            <div className={`w-3 h-3 rounded-full ${midiConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <button
+              onClick={() => setAudioEnabled(!audioEnabled)}
+              className={`p-3 rounded-xl transition-colors ${audioEnabled ? 'bg-slate-700 text-green-400' : 'bg-slate-800 text-red-400'}`}
+              title="Toggle Sound"
+            >
+              {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
