@@ -7,47 +7,39 @@ const MiniKeyboard = ({ notes, mode }) => {
   const octaves = [3, 4];
 
   return (
-    <div className="flex items-start bg-slate-700 p-1 rounded-md">
-      {octaves.map(octave => (
-        <div key={`octave-${octave}`} className="flex relative">
-          {NOTES.map((note, noteIndex) => {
-            if (note.includes('#')) return null; // Iterate white keys only
+    <div className="flex items-start">
+      {octaves.flatMap(octave =>
+        NOTES.map((note, noteIndex) => {
+          const isBlackKey = note.includes('#');
+          const isHighlighted = notes.some(n => n.note === noteIndex && n.octave === octave);
 
-            const hasBlackKey = NOTES[(noteIndex + 1) % 12].includes('#');
-
-            const whiteKeyHighlighted = notes.some(n => n.note === noteIndex && n.octave === octave);
-
-            const blackKeyNoteIndex = (noteIndex + 1) % 12;
-            const blackKeyHighlighted = hasBlackKey && notes.some(n => n.note === blackKeyNoteIndex && n.octave === octave);
-
-            return (
-              <div key={`${octave}-${noteIndex}`} className="relative">
+          return (
+            <div key={`${octave}-${noteIndex}`} className="relative">
+              <div
+                className={`
+                  w-4 h-12 border-l border-r border-b border-slate-400
+                  ${isBlackKey ? 'hidden' : 'block'}
+                  ${isHighlighted
+                    ? (mode === 'major' ? 'bg-blue-400' : 'bg-orange-400')
+                    : 'bg-slate-200'
+                  }
+                `}
+              ></div>
+              {isBlackKey && (
                 <div
                   className={`
-                    w-4 h-12 border-l border-r border-b-2 border-slate-300 rounded-b-sm
-                    ${whiteKeyHighlighted
-                      ? (mode === 'major' ? 'bg-blue-400 border-b-blue-600' : 'bg-orange-400 border-b-orange-600')
-                      : 'bg-white'
+                    absolute top-0 -ml-2 w-2.5 h-8
+                    ${isHighlighted
+                      ? (mode === 'major' ? 'bg-blue-600' : 'bg-orange-600')
+                      : 'bg-black'
                     }
                   `}
                 ></div>
-
-                {hasBlackKey && (
-                  <div
-                    className={`
-                      absolute top-0 -right-[6px] w-3 h-8 z-10 border-b-4 border-slate-900 rounded-b-sm shadow-sm
-                      ${blackKeyHighlighted
-                        ? (mode === 'major' ? 'bg-blue-600' : 'bg-orange-600')
-                        : 'bg-slate-800'
-                      }
-                    `}
-                  ></div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ))}
+              )}
+            </div>
+          );
+        })
+      )}
     </div>
   );
 };
