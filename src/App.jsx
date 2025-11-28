@@ -133,7 +133,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 font-sans select-none">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 font-sans select-none pt-10">
 
       <div className="w-full max-w-4xl mb-10 space-y-6">
         <div className="text-center space-y-2">
