@@ -20,7 +20,7 @@ const MiniKeyboard = ({ notes, mode }) => {
                   w-4 h-12 border-l border-r border-b border-slate-400
                   ${isBlackKey ? 'hidden' : 'block'}
                   ${isHighlighted
-                    ? (mode === 'major' ? 'bg-blue-400' : 'bg-orange-400')
+                    ? (mode === 'major' ? 'bg-orange-400' : 'bg-blue-400')
                     : 'bg-slate-200'
                   }
                 `}
@@ -30,7 +30,7 @@ const MiniKeyboard = ({ notes, mode }) => {
                   className={`
                     absolute top-0 -ml-2 w-2.5 h-8
                     ${isHighlighted
-                      ? (mode === 'major' ? 'bg-blue-600' : 'bg-orange-600')
+                      ? (mode === 'major' ? 'bg-orange-600' : 'bg-blue-600')
                       : 'bg-black'
                     }
                   `}
@@ -142,7 +142,7 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
           <button
             onClick={() => setChordType('triads')}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              chordType === 'triads' ? 'bg-blue-500 text-white' : 'text-slate-300 hover:bg-slate-600'
+              chordType === 'triads' ? (mode === 'major' ? 'bg-orange-500 text-white' : 'bg-blue-500 text-white') : 'text-slate-300 hover:bg-slate-600'
             }`}
           >
             Diatonic Triads
@@ -150,7 +150,7 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
           <button
             onClick={() => setChordType('sevenths')}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              chordType === 'sevenths' ? 'bg-blue-500 text-white' : 'text-slate-300 hover:bg-slate-600'
+              chordType === 'sevenths' ? (mode === 'major' ? 'bg-orange-500 text-white' : 'bg-blue-500 text-white') : 'text-slate-300 hover:bg-slate-600'
             }`}
           >
             Diatonic Seventh Chords
@@ -162,8 +162,8 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
           <tr className="border-b border-slate-700">
             <th className="p-4 w-[10%]">Degree</th>
             <th className="p-4 w-[20%]">Chord</th>
-            <th className="p-4 w-[25%]">Notes</th>
-            <th className="p-4 w-[35%]">Visualization</th>
+            <th className="p-4 w-[10%]">Notes</th>
+            <th className="p-4 w-[50%]">Visualization</th>
             <th className="p-4 w-[10%]">Play</th>
           </tr>
         </thead>
