@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Volume2, VolumeX, Play, RefreshCw } from 'lucide-react';
 import ChordsTable from './components/ChordsTable';
+import { WebMidi } from 'web-midi-api';
 
 // Note definitions
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -31,6 +32,37 @@ export default function App() {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [audioCtx, setAudioCtx] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    WebMidi.enable()
+      .then(() => {
+        console.log('WebMidi enabled!');
+        console.log('Inputs:', WebMidi.inputs);
+
+        WebMidi.inputs.forEach(input => {
+          input.addListener('noteon', 'all', e => {
+            const { note } = e;
+            const noteName = note.name;
+            const octave = note.octave;
+            const noteIndex = NOTES.indexOf(noteName);
+
+            if (noteIndex !== -1) {
+              handleKeyClick(noteIndex, octave);
+            }
+          });
+        });
+      })
+      .catch(err => {
+        console.error('WebMidi could not be enabled.', err);
+      });
+
+    return () => {
+      WebMidi.inputs.forEach(input => {
+        input.removeListener('noteon', 'all');
+      });
+      WebMidi.disable();
+    };
+  }, []);
 
   const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]].toLowerCase();
   const currentScale = SCALES[mode][variationName];
@@ -153,7 +185,8 @@ export default function App() {
                 selectedRoot !== null && !isPlaying
                   ? (mode === 'major' ? 'bg-orange-500/20 text-orange-300 hover:bg-orange-500/30' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30')
                   : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
-              }`}>
+              }`}
+            >
               <Play size={24} />
             </button>
             <div>
