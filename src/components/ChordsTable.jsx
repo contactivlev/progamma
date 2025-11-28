@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Play } from 'lucide-react';
 
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 const MiniKeyboard = ({ notes, mode }) => {
-  const octaves = [3, 4];
+  const octaves = [3, 4, 5];
 
   return (
     <div className="flex items-start">
@@ -45,7 +45,6 @@ const MiniKeyboard = ({ notes, mode }) => {
 };
 
 const ChordRow = ({ degree, chordName, notes, playChord, mode }) => {
-
   const formattedNotes = notes.map(n => NOTES[n.note]).join('-');
 
   return (
@@ -66,56 +65,98 @@ const ChordRow = ({ degree, chordName, notes, playChord, mode }) => {
 };
 
 const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
+  const [chordType, setChordType] = useState('triads');
 
-  const getChord = (root, scale, degree) => {
-    const getNoteDetails = (scaleDegree) => {
-        const totalSemitones = root.note + scale[scaleDegree % 7];
-        const noteIndex = totalSemitones % 12;
-        const octave = root.octave + Math.floor(totalSemitones / 12);
-        return { note: noteIndex, octave };
-    };
+  const getNoteDetails = (root, scale, scaleDegree) => {
+    const octaveOffset = Math.floor(scaleDegree / 7);
+    const scaleIndex = scaleDegree % 7;
+    const totalSemitones = root.note + scale[scaleIndex];
+    const noteIndex = totalSemitones % 12;
+    const octave = root.octave + Math.floor(totalSemitones / 12) + octaveOffset;
+    return { note: noteIndex, octave };
+  };
 
-    const chordRoot = getNoteDetails(degree - 1);
-    const third = getNoteDetails(degree + 1);
-    const fifth = getNoteDetails(degree + 3);
+  const getTriad = (root, scale, degree) => {
+    const chordRoot = getNoteDetails(root, scale, degree - 1);
+    const third = getNoteDetails(root, scale, degree + 1);
+    const fifth = getNoteDetails(root, scale, degree + 3);
 
     const thirdInterval = (third.note - chordRoot.note + 12) % 12;
     const fifthInterval = (fifth.note - chordRoot.note + 12) % 12;
 
     let triad;
-    if (thirdInterval === 4 && fifthInterval === 7) {
-      triad = 'Major';
-    } else if (thirdInterval === 3 && fifthInterval === 7) {
-      triad = 'Minor';
-    } else if (thirdInterval === 3 && fifthInterval === 6) {
-      triad = 'Diminished';
-    } else if (thirdInterval === 4 && fifthInterval === 8) {
-      triad = 'Augmented';
-    }
+    if (thirdInterval === 4 && fifthInterval === 7) triad = 'Major';
+    else if (thirdInterval === 3 && fifthInterval === 7) triad = 'Minor';
+    else if (thirdInterval === 3 && fifthInterval === 6) triad = 'Diminished';
+    else if (thirdInterval === 4 && fifthInterval === 8) triad = 'Augmented';
 
     return {
       name: `${NOTES[chordRoot.note]} ${triad}`,
       notes: [chordRoot, third, fifth],
       degree,
-      triad
+    };
+  };
+
+  const getSeventhChord = (root, scale, degree) => {
+    const chordRoot = getNoteDetails(root, scale, degree - 1);
+    const third = getNoteDetails(root, scale, degree + 1);
+    const fifth = getNoteDetails(root, scale, degree + 3);
+    const seventh = getNoteDetails(root, scale, degree + 5);
+
+    const thirdInterval = (third.note - chordRoot.note + 12) % 12;
+    const fifthInterval = (fifth.note - chordRoot.note + 12) % 12;
+    const seventhInterval = (seventh.note - chordRoot.note + 12) % 12;
+
+    let quality;
+    if (thirdInterval === 4 && fifthInterval === 7 && seventhInterval === 11) quality = 'Major 7th';
+    else if (thirdInterval === 3 && fifthInterval === 7 && seventhInterval === 10) quality = 'Minor 7th';
+    else if (thirdInterval === 4 && fifthInterval === 7 && seventhInterval === 10) quality = 'Dominant 7th';
+    else if (thirdInterval === 3 && fifthInterval === 6 && seventhInterval === 10) quality = 'Half-Diminished 7th';
+    else if (thirdInterval === 3 && fifthInterval === 6 && seventhInterval === 9) quality = 'Diminished 7th';
+
+    return {
+      name: `${NOTES[chordRoot.note]} ${quality}`,
+      notes: [chordRoot, third, fifth, seventh],
+      degree,
     };
   };
 
   const chords = selectedRoot
-    ? Array.from({ length: 7 }, (_, i) => getChord(selectedRoot, scale, i + 1))
+    ? Array.from({ length: 7 }, (_, i) =>
+        chordType === 'triads'
+          ? getTriad(selectedRoot, scale, i + 1)
+          : getSeventhChord(selectedRoot, scale, i + 1)
+      )
     : [];
 
   const playChord = (chordNotes) => {
-    console.log('--- Playing Chord ---');
-    console.log('Using notes:', chordNotes.map(n => `${NOTES[n.note]}${n.octave}`));
     chordNotes.forEach(note => {
-        playTone(note.note, note.octave);
+      playTone(note.note, note.octave);
     });
   };
 
   return (
     <div className="w-full max-w-5xl mt-8">
-      <h2 className="text-2xl font-bold mb-4 text-center">Diatonic Chords</h2>
+      <div className="flex justify-center mb-4">
+        <div className="flex rounded-lg bg-slate-700 p-1">
+          <button
+            onClick={() => setChordType('triads')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              chordType === 'triads' ? 'bg-blue-500 text-white' : 'text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            Diatonic Triads
+          </button>
+          <button
+            onClick={() => setChordType('sevenths')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              chordType === 'sevenths' ? 'bg-blue-500 text-white' : 'text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            Diatonic Seventh Chords
+          </button>
+        </div>
+      </div>
       <table className="w-full table-fixed text-left bg-slate-800/50 rounded-2xl border-collapse">
         <thead>
           <tr className="border-b border-slate-700">
