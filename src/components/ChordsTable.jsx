@@ -3,7 +3,10 @@ import { Play } from 'lucide-react';
 
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-const ChordRow = ({ degree, triad, chordName, notes, playChord, mode }) => {
+const ChordRow = ({ degree, chordName, notes, playChord, mode }) => {
+
+  const formattedNotes = notes.map(n => `${NOTES[n.note]}${n.octave}`).join(', ');
+
   const MiniKeyboard = () => {
     const twoOctaves = [...NOTES, ...NOTES];
 
@@ -40,8 +43,8 @@ const ChordRow = ({ degree, triad, chordName, notes, playChord, mode }) => {
   return (
     <tr className="border-b border-slate-700">
       <td className="p-4">{degree}</td>
-      <td className="p-4">{triad}</td>
       <td className="p-4">{chordName}</td>
+      <td className="p-4">{formattedNotes}</td>
       <td className="p-4">
         <MiniKeyboard />
       </td>
@@ -55,9 +58,6 @@ const ChordRow = ({ degree, triad, chordName, notes, playChord, mode }) => {
 };
 
 const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
-  if (selectedRoot === null) {
-    return null;
-  }
 
   const getChord = (root, scale, degree) => {
     const getNoteDetails = (scaleDegree) => {
@@ -93,7 +93,9 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
     };
   };
 
-  const chords = Array.from({ length: 7 }, (_, i) => getChord(selectedRoot, scale, i + 1));
+  const chords = selectedRoot
+    ? Array.from({ length: 7 }, (_, i) => getChord(selectedRoot, scale, i + 1))
+    : [];
 
   const playChord = (chordNotes) => {
     console.log('--- Playing Chord ---');
@@ -110,24 +112,31 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone }) => {
         <thead>
           <tr className="border-b border-slate-700">
             <th className="p-4">Degree</th>
-            <th className="p-4">Triad</th>
             <th className="p-4">Chord</th>
+            <th className="p-4">Notes</th>
             <th className="p-4">Visualization</th>
             <th className="p-4">Play</th>
           </tr>
         </thead>
         <tbody>
-          {chords.map(chord => (
-            <ChordRow
-              key={chord.degree}
-              degree={chord.degree}
-              triad={chord.triad}
-              chordName={chord.name}
-              notes={chord.notes}
-              playChord={() => playChord(chord.notes)}
-              mode={mode}
-            />
-          ))}
+          {selectedRoot ? (
+            chords.map(chord => (
+              <ChordRow
+                key={chord.degree}
+                degree={chord.degree}
+                chordName={chord.name}
+                notes={chord.notes}
+                playChord={() => playChord(chord.notes)}
+                mode={mode}
+              />
+            ))
+          ) : (
+            <tr>
+              <td colSpan="5" className="p-8 text-center text-slate-400">
+                Select a root note on the piano to see the diatonic chords.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
