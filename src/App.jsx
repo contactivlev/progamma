@@ -381,15 +381,10 @@ export default function App() {
         </div>
       )}
       <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
-        <div className="w-full max-w-4xl mb-10 space-y-6">
+        <div className="w-full max-w-4xl mb-2 space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-blue-400 bg-clip-text text-transparent">Scale Visualizer</h1>
             <p className="text-slate-400">Select a root note to see the scale</p>
-            {selectedRoot && (
-              <p className="text-slate-300 text-lg">
-                Scales played: <span className="font-bold text-orange-400">{currentScaleStep}/7</span> <span className="font-bold text-blue-400">{completedScales}</span>, best result: <span className="font-bold text-green-400">{bestScore}</span>
-              </p>
-            )}
           </div>
 
           <div className="bg-slate-800/50 p-6 rounded-2xl backdrop-blur-sm border border-slate-700 shadow-xl flex flex-row items-center justify-between gap-6">
@@ -440,7 +435,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="relative w-full max-w-4xl overflow-x-auto pb-8 custom-scrollbar">
+        <div className="relative w-full max-w-4xl overflow-x-auto pb-4 custom-scrollbar">
           <div className="flex justify-center min-w-[800px]">
             {[0, 1].map(octave => (
               <div key={`octave-${octave}`} className="flex relative">
@@ -505,6 +500,15 @@ export default function App() {
             ))}
           </div>
         </div>
+        
+        {selectedRoot && (
+          <div className="w-full max-w-4xl mt-4 text-center">
+            <p className="text-slate-300 text-lg">
+              Scales played: <span className="font-bold text-orange-400">{currentScaleStep}/7</span> <span className="font-bold text-blue-400">{completedScales}</span>, best result: <span className="font-bold text-green-400">{bestScore}</span>
+            </p>
+          </div>
+        )}
+
         <ChordsTable
           selectedRoot={selectedRoot}
           mode={mode}
