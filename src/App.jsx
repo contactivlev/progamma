@@ -32,6 +32,11 @@ export default function App() {
   const [playingKeys, setPlayingKeys] = useState([]);
   const [audioPromptState, setAudioPromptState] = useState('visible');
   const [scale, setScale] = useState(1);
+  const [chordType, setChordType] = useState('triads');
+  const [highlightedChord, setHighlightedChord] = useState(null);
+  const [heldNotes, setHeldNotes] = useState(new Set());
+  const recognitionTimeoutRef = useRef(null);
+
 
   useEffect(() => {
     const handleResize = () => {
@@ -86,6 +91,71 @@ export default function App() {
     osc.stop(audioCtxRef.current.currentTime + 1.5);
   }, [audioEnabled]);
 
+  const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]].toLowerCase();
+  const currentScale = SCALES[mode][variationName];
+
+  const getNoteDetails = (root, scale, scaleDegree) => {
+    const octaveOffset = Math.floor(scaleDegree / 7);
+    const scaleIndex = scaleDegree % 7;
+    const totalSemitones = root.note + scale[scaleIndex];
+    const noteIndex = totalSemitones % 12;
+    const octave = root.octave + Math.floor(totalSemitones / 12) + octaveOffset;
+    return { note: noteIndex, octave };
+  };
+
+  const getTriad = (root, scale, degree) => {
+    const chordRoot = getNoteDetails(root, scale, degree - 1);
+    const third = getNoteDetails(root, scale, degree + 1);
+    const fifth = getNoteDetails(root, scale, degree + 3);
+
+    const thirdInterval = (third.note - chordRoot.note + 12) % 12;
+    const fifthInterval = (fifth.note - chordRoot.note + 12) % 12;
+
+    let triad;
+    if (thirdInterval === 4 && fifthInterval === 7) triad = 'Major';
+    else if (thirdInterval === 3 && fifthInterval === 7) triad = 'Minor';
+    else if (thirdInterval === 3 && fifthInterval === 6) triad = 'Diminished';
+    else if (thirdInterval === 4 && fifthInterval === 8) triad = 'Augmented';
+
+    return {
+      name: `${NOTES[chordRoot.note]} ${triad}`,
+      notes: [chordRoot, third, fifth],
+      degree,
+    };
+  };
+
+  const getSeventhChord = (root, scale, degree) => {
+    const chordRoot = getNoteDetails(root, scale, degree - 1);
+    const third = getNoteDetails(root, scale, degree + 1);
+    const fifth = getNoteDetails(root, scale, degree + 3);
+    const seventh = getNoteDetails(root, scale, degree + 5);
+
+    const thirdInterval = (third.note - chordRoot.note + 12) % 12;
+    const fifthInterval = (fifth.note - chordRoot.note + 12) % 12;
+    const seventhInterval = (seventh.note - chordRoot.note + 12) % 12;
+
+    let quality;
+    if (thirdInterval === 4 && fifthInterval === 7 && seventhInterval === 11) quality = 'Major 7th';
+    else if (thirdInterval === 3 && fifthInterval === 7 && seventhInterval === 10) quality = 'Minor 7th';
+    else if (thirdInterval === 4 && fifthInterval === 7 && seventhInterval === 10) quality = 'Dominant 7th';
+    else if (thirdInterval === 3 && fifthInterval === 6 && seventhInterval === 10) quality = 'Half-Diminished 7th';
+    else if (thirdInterval === 3 && fifthInterval === 6 && seventhInterval === 9) quality = 'Diminished 7th';
+
+    return {
+      name: `${NOTES[chordRoot.note]} ${quality}`,
+      notes: [chordRoot, third, fifth, seventh],
+      degree,
+    };
+  };
+
+  const chords = selectedRoot
+    ? Array.from({ length: 7 }, (_, i) =>
+      chordType === 'triads'
+        ? getTriad(selectedRoot, currentScale, i + 1)
+        : getSeventhChord(selectedRoot, currentScale, i + 1)
+    )
+    : [];
+
   const handleKeyClick = useCallback((noteIndex, octave, fromMidi = false) => {
     if (fromMidi && (!audioCtxRef.current || audioCtxRef.current.state === 'suspended')) return;
 
@@ -109,12 +179,44 @@ export default function App() {
     }
   }, [initAudio, playTone]);
 
+  const recognizeChord = useCallback((playedNotes) => {
+    if (!chords.length) return;
+
+    const playedNoteIndexes = new Set(Array.from(playedNotes).map(noteNumber => noteNumber % 12));
+
+    for (const chord of chords) {
+      const chordNoteIndexes = new Set(chord.notes.map(n => n.note));
+
+      if (playedNoteIndexes.size === chordNoteIndexes.size && [...playedNoteIndexes].every(note => chordNoteIndexes.has(note))) {
+        setHighlightedChord(chord.degree);
+        setTimeout(() => {
+          setHighlightedChord(null);
+        }, 2000);
+        return;
+      }
+    }
+  }, [chords]);
+
   useEffect(() => {
     const handleNoteOn = (e) => {
       const { note } = e;
       const noteIndex = note.number % 12;
       const octave = Math.floor(note.number / 12) - 1;
       handleKeyClick(noteIndex, octave, true);
+
+      setHeldNotes(prev => {
+        const newHeldNotes = new Set(prev);
+        newHeldNotes.add(note.number);
+        return newHeldNotes;
+      });
+    };
+
+    const handleNoteOff = (e) => {
+      setHeldNotes(prev => {
+        const newHeldNotes = new Set(prev);
+        newHeldNotes.delete(e.note.number);
+        return newHeldNotes;
+      });
     };
 
     WebMidi.enable()
@@ -125,7 +227,9 @@ export default function App() {
         const setupListeners = () => {
           WebMidi.inputs.forEach(input => {
             input.removeListener('noteon');
+            input.removeListener('noteoff');
             input.addListener('noteon', handleNoteOn);
+            input.addListener('noteoff', handleNoteOff);
           });
         };
 
@@ -147,12 +251,28 @@ export default function App() {
     return () => {
       WebMidi.inputs.forEach(input => {
         input.removeListener('noteon');
+        input.removeListener('noteoff');
       });
     };
   }, [handleKeyClick]);
 
-  const variationName = SCALE_VARIATIONS[mode][scaleVariation[mode]].toLowerCase();
-  const currentScale = SCALES[mode][variationName];
+  useEffect(() => {
+    if (recognitionTimeoutRef.current) {
+      clearTimeout(recognitionTimeoutRef.current);
+    }
+
+    recognitionTimeoutRef.current = setTimeout(() => {
+      if (heldNotes.size > 2) {
+        recognizeChord(heldNotes);
+      }
+    }, 100); // 100ms margin of error
+
+    return () => {
+      if (recognitionTimeoutRef.current) {
+        clearTimeout(recognitionTimeoutRef.current);
+      }
+    };
+  }, [heldNotes, recognizeChord]);
 
   const playScale = useCallback(() => {
     if (selectedRoot === null || isPlaying) return;
@@ -284,7 +404,7 @@ export default function App() {
                   const nextNoteIndex = (index + 1) % 12;
                   const hasBlackKey = NOTES[nextNoteIndex].includes('#');
                   const currentOctave = octave + 3;
-                  
+
                   const whiteKeyId = `${index}-${currentOctave}`;
                   const isWhiteKeyPlaying = playingKeys.includes(whiteKeyId);
                   const whiteStatus = getScaleStatus(index);
@@ -297,14 +417,14 @@ export default function App() {
                     <div key={`key-${octave}-${index}`} className="relative">
                       <button
                         onClick={() => handleKeyClick(index, currentOctave)}
-                        className={`w-14 h-48 border-b-4 border-l border-r rounded-b-lg active:scale-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-4 group relative z-0 
+                        className={`w-14 h-48 border-b-4 border-l border-r rounded-b-lg active:scale-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-4 group relative z-0
                           ${
-                            isWhiteKeyPlaying 
-                              ? (mode === 'major' ? 'bg-orange-300' : 'bg-blue-300') 
-                              : whiteStatus.isRoot 
-                                ? (mode === 'major' ? 'bg-orange-600 border-orange-800 shadow-[0_0_20px_rgba(234,88,12,0.6)] z-10' : 'bg-blue-600 border-blue-800 shadow-[0_0_20px_rgba(37,99,235,0.6)] z-10') 
-                                : !whiteStatus.isRoot && whiteStatus.isActive 
-                                  ? (mode === 'major' ? 'bg-orange-200 border-b-orange-300' : 'bg-blue-200 border-b-blue-300') 
+                            isWhiteKeyPlaying
+                              ? (mode === 'major' ? 'bg-orange-300' : 'bg-blue-300')
+                              : whiteStatus.isRoot
+                                ? (mode === 'major' ? 'bg-orange-600 border-orange-800 shadow-[0_0_20px_rgba(234,88,12,0.6)] z-10' : 'bg-blue-600 border-blue-800 shadow-[0_0_20px_rgba(37,99,235,0.6)] z-10')
+                                : !whiteStatus.isRoot && whiteStatus.isActive
+                                  ? (mode === 'major' ? 'bg-orange-200 border-b-orange-300' : 'bg-blue-200 border-b-blue-300')
                                   : 'bg-white hover:bg-gray-100'
                           }
                         `}>
@@ -316,14 +436,14 @@ export default function App() {
                       {hasBlackKey && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleKeyClick(nextNoteIndex, currentOctave); }}
-                          className={`absolute -right-4 top-0 w-8 h-32 border-b-8 rounded-b-md z-20 active:scale-y-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-3 shadow-xl 
+                          className={`absolute -right-4 top-0 w-8 h-32 border-b-8 rounded-b-md z-20 active:scale-y-[0.98] active:border-b-0 transition-all duration-100 flex flex-col justify-end items-center pb-3 shadow-xl
                             ${
-                              isBlackKeyPlaying 
-                                ? (mode === 'major' ? 'bg-orange-500' : 'bg-blue-500') 
-                                : blackStatus.isRoot 
-                                  ? (mode === 'major' ? 'bg-orange-600 border-orange-900 shadow-[0_0_15px_rgba(234,88,12,0.6)]' : 'bg-blue-600 border-blue-900 shadow-[0_0_15px_rgba(37,99,235,0.6)]') 
-                                  : blackStatus.isActive 
-                                    ? (mode === 'major' ? 'bg-orange-400 border-orange-900' : 'bg-blue-400 border-blue-900') 
+                              isBlackKeyPlaying
+                                ? (mode === 'major' ? 'bg-orange-500' : 'bg-blue-500')
+                                : blackStatus.isRoot
+                                  ? (mode === 'major' ? 'bg-orange-600 border-orange-900 shadow-[0_0_15px_rgba(234,88,12,0.6)]' : 'bg-blue-600 border-blue-900 shadow-[0_0_15px_rgba(37,99,235,0.6)]')
+                                  : blackStatus.isActive
+                                    ? (mode === 'major' ? 'bg-orange-400 border-orange-900' : 'bg-blue-400 border-blue-900')
                                     : 'bg-slate-800 border-black hover:bg-slate-700'
                             }
                           `}>
@@ -339,7 +459,16 @@ export default function App() {
             ))}
           </div>
         </div>
-        <ChordsTable selectedRoot={selectedRoot} mode={mode} scale={currentScale} playTone={playTone} initAudio={initAudio} />
+        <ChordsTable
+          selectedRoot={selectedRoot}
+          mode={mode}
+          playTone={playTone}
+          initAudio={initAudio}
+          chords={chords}
+          chordType={chordType}
+          setChordType={setChordType}
+          highlightedChord={highlightedChord}
+        />
       </div>
     </div>
   );

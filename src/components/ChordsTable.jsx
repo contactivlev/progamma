@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Play } from 'lucide-react';
 
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -44,11 +44,11 @@ const MiniKeyboard = ({ notes, mode }) => {
   );
 };
 
-const ChordRow = ({ degree, chordName, notes, playChord, mode }) => {
+const ChordRow = ({ degree, chordName, notes, playChord, mode, isHighlighted }) => {
   const formattedNotes = notes.map(n => NOTES[n.note]).join('-');
 
   return (
-    <tr className="border-b border-slate-700 last:border-b-0">
+    <tr className={`border-b border-slate-700 last:border-b-0 transition-colors duration-300 ${isHighlighted ? 'bg-slate-700' : ''}`}>
       <td className="p-4">{degree}</td>
       <td className="p-4">{chordName}</td>
       <td className="p-4">{formattedNotes}</td>
@@ -64,70 +64,7 @@ const ChordRow = ({ degree, chordName, notes, playChord, mode }) => {
   );
 };
 
-const ChordsTable = ({ selectedRoot, mode, scale, playTone, initAudio }) => {
-  const [chordType, setChordType] = useState('triads');
-
-  const getNoteDetails = (root, scale, scaleDegree) => {
-    const octaveOffset = Math.floor(scaleDegree / 7);
-    const scaleIndex = scaleDegree % 7;
-    const totalSemitones = root.note + scale[scaleIndex];
-    const noteIndex = totalSemitones % 12;
-    const octave = root.octave + Math.floor(totalSemitones / 12) + octaveOffset;
-    return { note: noteIndex, octave };
-  };
-
-  const getTriad = (root, scale, degree) => {
-    const chordRoot = getNoteDetails(root, scale, degree - 1);
-    const third = getNoteDetails(root, scale, degree + 1);
-    const fifth = getNoteDetails(root, scale, degree + 3);
-
-    const thirdInterval = (third.note - chordRoot.note + 12) % 12;
-    const fifthInterval = (fifth.note - chordRoot.note + 12) % 12;
-
-    let triad;
-    if (thirdInterval === 4 && fifthInterval === 7) triad = 'Major';
-    else if (thirdInterval === 3 && fifthInterval === 7) triad = 'Minor';
-    else if (thirdInterval === 3 && fifthInterval === 6) triad = 'Diminished';
-    else if (thirdInterval === 4 && fifthInterval === 8) triad = 'Augmented';
-
-    return {
-      name: `${NOTES[chordRoot.note]} ${triad}`,
-      notes: [chordRoot, third, fifth],
-      degree,
-    };
-  };
-
-  const getSeventhChord = (root, scale, degree) => {
-    const chordRoot = getNoteDetails(root, scale, degree - 1);
-    const third = getNoteDetails(root, scale, degree + 1);
-    const fifth = getNoteDetails(root, scale, degree + 3);
-    const seventh = getNoteDetails(root, scale, degree + 5);
-
-    const thirdInterval = (third.note - chordRoot.note + 12) % 12;
-    const fifthInterval = (fifth.note - chordRoot.note + 12) % 12;
-    const seventhInterval = (seventh.note - chordRoot.note + 12) % 12;
-
-    let quality;
-    if (thirdInterval === 4 && fifthInterval === 7 && seventhInterval === 11) quality = 'Major 7th';
-    else if (thirdInterval === 3 && fifthInterval === 7 && seventhInterval === 10) quality = 'Minor 7th';
-    else if (thirdInterval === 4 && fifthInterval === 7 && seventhInterval === 10) quality = 'Dominant 7th';
-    else if (thirdInterval === 3 && fifthInterval === 6 && seventhInterval === 10) quality = 'Half-Diminished 7th';
-    else if (thirdInterval === 3 && fifthInterval === 6 && seventhInterval === 9) quality = 'Diminished 7th';
-
-    return {
-      name: `${NOTES[chordRoot.note]} ${quality}`,
-      notes: [chordRoot, third, fifth, seventh],
-      degree,
-    };
-  };
-
-  const chords = selectedRoot
-    ? Array.from({ length: 7 }, (_, i) =>
-        chordType === 'triads'
-          ? getTriad(selectedRoot, scale, i + 1)
-          : getSeventhChord(selectedRoot, scale, i + 1)
-      )
-    : [];
+const ChordsTable = ({ selectedRoot, mode, playTone, initAudio, chords, chordType, setChordType, highlightedChord }) => {
 
   const playChord = (chordNotes) => {
     initAudio();
@@ -178,6 +115,7 @@ const ChordsTable = ({ selectedRoot, mode, scale, playTone, initAudio }) => {
                 notes={chord.notes}
                 playChord={() => playChord(chord.notes)}
                 mode={mode}
+                isHighlighted={highlightedChord === chord.degree}
               />
             ))
           ) : (
