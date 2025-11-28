@@ -46,7 +46,7 @@ const MiniKeyboard = ({ notes, mode }) => {
 
 const ChordRow = ({ degree, chordName, notes, playChord, mode }) => {
 
-  const formattedNotes = notes.map(n => `${NOTES[n.note]}${n.octave}`).join(', ');
+  const formattedNotes = notes.map(n => NOTES[n.note]).join('-');
 
   return (
     <tr className="border-b border-slate-700">
